@@ -100,13 +100,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				return m, tea.Quit
 			}
-		case "left":
+		case "left", "h":
 			m.menu.CloseSubmenu()
-		case "up":
+		case "up", "k":
 			m.menu.CursorUp()
-		case "down":
+		case "down", "j":
 			m.menu.CursorDown()
-		case "right":
+		case "right", "l":
 			if !m.menu.IsSubmenuOpen() {
 				return m, m.menu.Activate()
 			}
