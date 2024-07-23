@@ -44,8 +44,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = libts.State(msg)
 
 	case tea.WindowSizeMsg:
+		needsClear := msg.Width < m.terminalWidth || msg.Height > m.terminalHeight
+
 		m.terminalWidth = msg.Width
 		m.terminalHeight = msg.Height
+
+		// Needed to clear artifacts in certain terminals.
+		if needsClear {
+			return m, tea.ClearScreen
+		}
 
 	case tea.KeyMsg:
 		switch msg.String() {

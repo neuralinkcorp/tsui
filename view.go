@@ -64,11 +64,13 @@ func statusButton(backendState string, isUsingExitNode bool) string {
 	case ipn.NeedsLogin.String():
 		return buttonStyle.
 			Background(yellow).
+			Foreground(black).
 			Render("Needs Login")
 
 	case ipn.NeedsMachineAuth.String():
 		return buttonStyle.
 			Background(yellow).
+			Foreground(black).
 			Render("Needs Machine Auth")
 
 	case ipn.Starting.String():
@@ -85,11 +87,13 @@ func statusButton(backendState string, isUsingExitNode bool) string {
 
 		return buttonStyle.
 			Background(green).
+			Foreground(black).
 			Render(text)
 	}
 
 	return buttonStyle.
 		Background(red).
+		Foreground(black).
 		Render("Not Connected")
 }
 
@@ -111,40 +115,43 @@ func (m model) View() string {
 
 		status := "Tailscale Status: "
 
-		status += statusButton(m.state.BackendState, m.state.CurrentExitNode != nil)
+		status += statusButton(m.state.BackendState, m.state.CurrentExitNode != nil) + "\n"
 
 		// Extra info; either auth URL or user login name, depending on the backend state.
 		if m.state.AuthURL != "" {
-			status += "\nAuth URL:       "
+			status += "Auth URL:       "
 			status += lipgloss.NewStyle().
 				Underline(true).
 				Foreground(blue).
 				Render(m.state.AuthURL)
-		} else {
-			status += "\n"
+		} else if m.state.User != nil {
 			status += lipgloss.NewStyle().
 				Faint(true).
 				Render(m.state.User.LoginName)
+		} else {
+			status += lipgloss.NewStyle().
+				Faint(true).
+				Render("--")
 		}
-
-		left := lipgloss.JoinHorizontal(lipgloss.Center, logo, status)
 
 		// App versions.
-		right := "tsui:      " + version + "\n"
-		right += "tailscale: "
+		versions := "tsui:      " + version + "\n"
+		versions += "tailscale: "
 		if m.state.TSVersion != "" {
-			right += m.state.TSVersion
+			versions += m.state.TSVersion
 		} else {
-			right += "loading..."
+			versions += "(not connected)"
 		}
-		right = lipgloss.NewStyle().
+		versions = lipgloss.NewStyle().
 			Faint(true).
-			Render(right)
+			Render(versions)
 
-		left = lipgloss.NewStyle().
-			Width(m.terminalWidth - lipgloss.Width(right)).
-			Render(left)
-		section := lipgloss.JoinHorizontal(lipgloss.Center, left, right)
+		// Spacer between the left content and the right content.
+		spacer := lipgloss.NewStyle().
+			Width(m.terminalWidth - lipgloss.Width(versions) - lipgloss.Width(status) - lipgloss.Width(logo)).
+			Render(" ")
+
+		section := lipgloss.JoinHorizontal(lipgloss.Center, logo, status, spacer, versions)
 		s.WriteString(section + "\n\n\n")
 	}
 
