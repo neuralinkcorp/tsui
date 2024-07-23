@@ -53,12 +53,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
-		case "up":
+		case "up", "k":
 			if m.exitNodeCursor > -1 {
 				m.exitNodeCursor--
 			}
 
-		case "down":
+		case "down", "j":
 			if m.exitNodeCursor < len(m.state.SortedExitNodes)-1 {
 				m.exitNodeCursor++
 			}
