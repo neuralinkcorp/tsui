@@ -21,6 +21,8 @@ type State struct {
 	TSVersion string
 	// ID of the currently selected exit node or nil if none is selected.
 	CurrentExitNode *tailcfg.StableNodeID
+	// Name of the currently selected exit node or an empty string if none is selected.
+	CurrentExitNodeName string
 	// User profile of the currently logged in user or nil if unknown.
 	User *tailcfg.UserProfile
 	// List of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
@@ -75,6 +77,13 @@ func MakeState(tsStatus *ipnstate.Status) State {
 
 	if tsStatus.ExitNodeStatus != nil {
 		state.CurrentExitNode = &tsStatus.ExitNodeStatus.ID
+
+		for _, peer := range state.SortedExitNodes {
+			if peer.ID == tsStatus.ExitNodeStatus.ID {
+				state.CurrentExitNodeName = PeerName(peer)
+				break
+			}
+		}
 	}
 
 	return state

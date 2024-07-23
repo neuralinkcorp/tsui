@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/neuralink/tsui/libts"
-	"tailscale.com/ipn/ipnstate"
+	"github.com/neuralink/tsui/ui"
 )
 
 // Message triggered on each poller tick.
@@ -23,7 +23,7 @@ type stateMsg libts.State
 
 // Command that retrives a new Tailscale state and triggers a stateMsg.
 // This will be run in a goroutine by the bubbletea runtime.
-func getState() tea.Msg {
+func updateState() tea.Msg {
 	status, _ := libts.Status(ctx)
 	state := libts.MakeState(status)
 	return stateMsg(state)
@@ -37,11 +37,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	// On tick, fetch a new state.
 	case tickMsg:
-		return m, getState
+		return m, updateState
 
 	// When the state updater returns, update our model.
 	case stateMsg:
 		m.state = libts.State(msg)
+
+		// Update the exit node submenu.
+		{
+			exitNodeItems := make([]ui.SubmenuItem, 2+len(m.state.SortedExitNodes))
+			exitNodeItems[0] = &ui.ToggleableSubmenuItem{
+				Label: "None",
+				OnActivate: func() tea.Msg {
+					libts.SetExitNode(ctx, nil)
+					return updateState()
+				},
+				IsActive: m.state.CurrentExitNode == nil,
+			}
+			exitNodeItems[1] = &ui.DividerSubmenuItem{}
+			for i, exitNode := range m.state.SortedExitNodes {
+				// Offset for the "None" item and the divider.
+				i += 2
+
+				label := libts.PeerName(exitNode)
+				if !exitNode.Online {
+					label += " (offline)"
+				}
+
+				exitNodeItems[i] = &ui.ToggleableSubmenuItem{
+					Label: label,
+					OnActivate: func() tea.Msg {
+						libts.SetExitNode(ctx, exitNode)
+						return updateState()
+					},
+					IsActive: m.state.CurrentExitNode != nil && exitNode.ID == *m.state.CurrentExitNode,
+					IsDim:    !exitNode.Online,
+				}
+			}
+
+			m.exitNodes.RightLabel = m.state.CurrentExitNodeName
+			m.exitNodes.Submenu.SetItems(exitNodeItems)
+		}
 
 	case tea.WindowSizeMsg:
 		needsClear := msg.Width < m.terminalWidth || msg.Height > m.terminalHeight
@@ -56,53 +92,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-
 		case "ctrl+c", "q":
 			return m, tea.Quit
-
-		case "up":
-			if m.exitNodeCursor > -1 {
-				m.exitNodeCursor--
-			}
-
-		case "down":
-			if m.exitNodeCursor < len(m.state.SortedExitNodes)-1 {
-				m.exitNodeCursor++
-			}
-
-		// Select exit node on enter or space.
-		case "enter", " ":
-			var exitNode *ipnstate.PeerStatus
-
-			// If they have an exit node selected and not "None", use it.
-			if m.exitNodeCursor > -1 {
-				exitNode = m.state.SortedExitNodes[m.exitNodeCursor]
-
-				// If this exit node is already selected, don't do anything.
-				if m.state.CurrentExitNode != nil && *m.state.CurrentExitNode == exitNode.ID {
-					return m, tick
-				}
-			}
-
-			// Eagerly update the model, and therefore the UI.
-			if exitNode == nil {
-				m.state.CurrentExitNode = nil
+		case "esc":
+			if m.menu.IsSubmenuOpen() {
+				m.menu.CloseSubmenu()
 			} else {
-				m.state.CurrentExitNode = &exitNode.ID
+				return m, tea.Quit
 			}
-
-			// Asynchronously use the Tailscale API to update the exit node.
-			cmd := func() tea.Msg {
-				libts.SetExitNode(ctx, exitNode)
-				return nil
+		case "left":
+			m.menu.CloseSubmenu()
+		case "up":
+			m.menu.CursorUp()
+		case "down":
+			m.menu.CursorDown()
+		case "right":
+			if !m.menu.IsSubmenuOpen() {
+				return m, m.menu.Activate()
 			}
-			return m, cmd
+		case "enter", " ":
+			return m, m.menu.Activate()
 		}
-	}
-
-	// Make sure the exit node cursor doesn't end up out of bounds if we lose exit nodes.
-	if m.exitNodeCursor > len(m.state.SortedExitNodes)-1 {
-		m.exitNodeCursor = -1
 	}
 
 	return m, tick

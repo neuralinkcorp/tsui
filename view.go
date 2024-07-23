@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/neuralink/tsui/libts"
+	"github.com/neuralink/tsui/ui"
 	"tailscale.com/ipn"
 )
 
@@ -17,45 +17,6 @@ var logo = strings.Join([]string{
 	`          by n7k    `,
 }, "\n")
 
-const (
-	primary   = lipgloss.Color("207")
-	secondary = lipgloss.Color("135")
-
-	red      = lipgloss.Color("203")
-	blue     = lipgloss.Color("039")
-	green    = lipgloss.Color("040")
-	yellow   = lipgloss.Color("214")
-	white    = lipgloss.Color("231")
-	darkGray = lipgloss.Color("237")
-	black    = lipgloss.Color("016")
-)
-
-// Format a list item for a submenu. Adds a newline to the end.
-func listItem(label string, isSelected bool, isActive bool, isDim bool) string {
-	style := lipgloss.NewStyle().
-		Padding(0, 1)
-
-	if isActive {
-		label = "*" + label
-		style = style.
-			Bold(true).
-			Foreground(secondary)
-	} else {
-		label = " " + label
-	}
-
-	if isSelected {
-		style = style.
-			Background(secondary).
-			Foreground(black)
-	} else if isDim {
-		style = style.
-			Faint(true)
-	}
-
-	return style.Width(35).Render(label) + "\n"
-}
-
 // Format the status button in the header bar.
 func statusButton(backendState string, isUsingExitNode bool) string {
 	buttonStyle := lipgloss.NewStyle().Padding(0, 1)
@@ -63,20 +24,20 @@ func statusButton(backendState string, isUsingExitNode bool) string {
 	switch backendState {
 	case ipn.NeedsLogin.String():
 		return buttonStyle.
-			Background(yellow).
-			Foreground(black).
+			Background(ui.Yellow).
+			Foreground(ui.Black).
 			Render("Needs Login")
 
 	case ipn.NeedsMachineAuth.String():
 		return buttonStyle.
-			Background(yellow).
-			Foreground(black).
+			Background(ui.Yellow).
+			Foreground(ui.Black).
 			Render("Needs Machine Auth")
 
 	case ipn.Starting.String():
 		return buttonStyle.
-			Background(blue).
-			Foreground(white).
+			Background(ui.Blue).
+			Foreground(ui.White).
 			Render("Starting...")
 
 	case ipn.Running.String():
@@ -86,14 +47,14 @@ func statusButton(backendState string, isUsingExitNode bool) string {
 		}
 
 		return buttonStyle.
-			Background(green).
-			Foreground(black).
+			Background(ui.Green).
+			Foreground(ui.Black).
 			Render(text)
 	}
 
 	return buttonStyle.
-		Background(red).
-		Foreground(black).
+		Background(ui.Red).
+		Foreground(ui.Black).
 		Render("Not Connected")
 }
 
@@ -109,7 +70,7 @@ func (m model) View() string {
 	// Header bar.
 	{
 		logo := lipgloss.NewStyle().
-			Foreground(primary).
+			Foreground(ui.Primary).
 			MarginRight(4).
 			Render(logo)
 
@@ -122,7 +83,7 @@ func (m model) View() string {
 			status += "Auth URL:       "
 			status += lipgloss.NewStyle().
 				Underline(true).
-				Foreground(blue).
+				Foreground(ui.Blue).
 				Render(m.state.AuthURL)
 		} else if m.state.User != nil {
 			status += lipgloss.NewStyle().
@@ -155,33 +116,7 @@ func (m model) View() string {
 		s.WriteString(section + "\n\n\n")
 	}
 
-	// Menus.
-	{
-		mainMenu := lipgloss.NewStyle().
-			Background(darkGray).
-			Padding(0, 1).
-			Render(lipgloss.NewStyle().
-				Width(45).
-				Render("Exit Nodes") + ">")
-
-		// Exit node submenu. (Currently hardcoded, in the future there will be multiple.)
-		subMenu := ""
-		{
-			subMenu = listItem("None", m.exitNodeCursor == -1, m.state.CurrentExitNode == nil, false)
-
-			subMenu += lipgloss.NewStyle().
-				Faint(true).
-				Render("  --") + "\n"
-
-			for i, choice := range m.state.SortedExitNodes {
-				isActive := m.state.CurrentExitNode != nil && choice.ID == *m.state.CurrentExitNode
-				subMenu += listItem(libts.PeerName(choice), m.exitNodeCursor == i, isActive, !choice.Online)
-			}
-		}
-
-		section := lipgloss.JoinHorizontal(lipgloss.Top, mainMenu, subMenu)
-		s.WriteString(section)
-	}
+	s.WriteString(m.menu.Render())
 
 	return s.String()
 }

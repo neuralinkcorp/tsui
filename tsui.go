@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/neuralink/tsui/libts"
+	"github.com/neuralink/tsui/ui"
 )
 
 const (
@@ -20,12 +21,15 @@ var ctx = context.Background()
 
 // Central model containing application state.
 type model struct {
-	// Rate at which to poll Tailscale for status updates.
-	tickInterval time.Duration
 	// Current Tailscale state info.
 	state libts.State
-	// Cursor position for the exit node selector. If -1, the "None" option is selected.
-	exitNodeCursor int
+
+	// Main menu.
+	menu      ui.Appmenu
+	exitNodes *ui.AppmenuItem
+
+	// Rate at which to poll Tailscale for status updates.
+	tickInterval time.Duration
 	// Current width of the terminal.
 	terminalWidth int
 	// Current height of the terminal.
@@ -38,18 +42,35 @@ func initialModel() model {
 	status, _ := libts.Status(ctx)
 	state := libts.MakeState(status)
 
+	// Construct the main menu
+	exitNodes := &ui.AppmenuItem{
+		LeftLabel:  "Exit Nodes",
+		RightLabel: state.CurrentExitNodeName,
+		Submenu:    ui.Submenu{Exclusivity: ui.SubmenuExclusivityOne},
+	}
+	menu := ui.Appmenu{
+		Items: []*ui.AppmenuItem{
+			exitNodes,
+			&ui.AppmenuItem{
+				LeftLabel: "Test",
+			},
+		},
+	}
+
 	return model{
-		terminalWidth:  0,
-		tickInterval:   defaultTickInterval,
-		state:          state,
-		exitNodeCursor: -1,
+		terminalWidth: 0,
+		tickInterval:  defaultTickInterval,
+		state:         state,
+
+		menu:      menu,
+		exitNodes: exitNodes,
 	}
 }
 
 // Bubbletea init function.
 func (m model) Init() tea.Cmd {
-	// Start our Tailscale poller.
-	return makeTick(m.tickInterval)
+	// Perform our initial state fetch to populate menus.
+	return updateState
 }
 
 func main() {
