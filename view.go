@@ -158,23 +158,38 @@ func (m model) View() string {
 				Render("Exit Nodes") + ">")
 
 		// Exit node submenu. (Currently hardcoded, in the future there will be multiple.)
-		subMenu := ""
-		{
-			subMenu = listItem("None", m.exitNodeCursor == -1, m.state.CurrentExitNode == nil, false)
-
-			subMenu += lipgloss.NewStyle().
-				Faint(true).
-				Render("  --") + "\n"
-
-			for i, choice := range m.state.SortedExitNodes {
-				isActive := m.state.CurrentExitNode != nil && choice.ID == *m.state.CurrentExitNode
-				subMenu += listItem(libts.PeerName(choice), m.exitNodeCursor == i, isActive, !choice.Online)
-			}
-		}
+		subMenu := m.exitNodeSubmenu()
 
 		section := lipgloss.JoinHorizontal(lipgloss.Top, mainMenu, subMenu)
 		s.WriteString(section)
 	}
 
 	return s.String()
+}
+
+func (m *model) exitNodeSubmenu() string {
+	subMenu := ""
+	if m.keyMode == searchKeyMode {
+		subMenu += "Search: "
+		subMenu += lipgloss.NewStyle().
+			Underline(true).
+			Foreground(white).
+			Render(m.searchString)
+		subMenu += "\n"
+	}
+
+	subMenu += listItem("None", m.selectedExitNode == "", m.state.CurrentExitNode == nil, false)
+
+	subMenu += lipgloss.NewStyle().
+		Faint(true).
+		Render("  --") + "\n"
+
+	nodes := m.filteredExitNodes
+	for _, choice := range nodes {
+		isActive := m.state.CurrentExitNode != nil && choice.ID == *m.state.CurrentExitNode
+		isSelected := m.selectedExitNode == choice.ID
+		name := libts.PeerName(choice)
+		subMenu += listItem(name, isSelected, isActive, !choice.Online)
+	}
+	return subMenu
 }

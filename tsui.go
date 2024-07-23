@@ -8,6 +8,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/neuralink/tsui/libts"
+	"tailscale.com/ipn/ipnstate"
+	"tailscale.com/tailcfg"
 )
 
 const (
@@ -18,18 +20,29 @@ const (
 
 var ctx = context.Background()
 
+const (
+	normalKeyMode = iota
+	searchKeyMode
+)
+
 // Central model containing application state.
 type model struct {
 	// Rate at which to poll Tailscale for status updates.
 	tickInterval time.Duration
 	// Current Tailscale state info.
 	state libts.State
-	// Cursor position for the exit node selector. If -1, the "None" option is selected.
-	exitNodeCursor int
+	// ID of the selected exit node or "" if none selected.
+	selectedExitNode tailcfg.StableNodeID
 	// Current width of the terminal.
 	terminalWidth int
 	// Current height of the terminal.
 	terminalHeight int
+	// Current key mode.
+	keyMode int
+	// Current search string (in searchKeyMode).
+	searchString string
+	// Exit nodes filtered using searchString.
+	filteredExitNodes []*ipnstate.PeerStatus
 }
 
 // Initialize the application state.
@@ -39,10 +52,13 @@ func initialModel() model {
 	state := libts.MakeState(status)
 
 	return model{
-		terminalWidth:  0,
-		tickInterval:   defaultTickInterval,
-		state:          state,
-		exitNodeCursor: -1,
+		terminalWidth:     0,
+		tickInterval:      defaultTickInterval,
+		state:             state,
+		selectedExitNode:  "",
+		keyMode:           normalKeyMode,
+		searchString:      "",
+		filteredExitNodes: nil,
 	}
 }
 
