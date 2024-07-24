@@ -139,13 +139,24 @@ func renderStatus(m *model) string {
 		return ""
 	}
 
-	statusPrefix := lipgloss.NewStyle().
-		Foreground(ui.Red).
-		Bold(true).
-		Render("Error: ")
+	var color lipgloss.Color
+	var statusPrefix string
+
+	switch m.statusType {
+	case statusTypeError:
+		color = ui.Red
+
+		statusPrefix = lipgloss.NewStyle().
+			Foreground(color).
+			Bold(true).
+			Render("Error: ")
+
+	case statusTypeSuccess:
+		color = ui.Green
+	}
 
 	statusText := lipgloss.NewStyle().
-		Foreground(ui.Red).
+		Foreground(color).
 		Render(m.statusText)
 
 	return lipgloss.NewStyle().

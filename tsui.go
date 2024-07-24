@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/neuralink/tsui/libts"
 	"github.com/neuralink/tsui/ui"
+	"golang.design/x/clipboard"
 	"tailscale.com/ipn"
 )
 
@@ -20,8 +21,20 @@ var Version = "local"
 const (
 	// Default rate at which to poll Tailscale for status updates.
 	tickInterval = 2 * time.Second
-	// How long to display status/error messages in the bottom bar before clearing them.
-	statusLifetime = 5 * time.Second
+	// How long to keep error messages in the bottom bar.
+	errorLifetime = 5 * time.Second
+	// How long to keep success messages in the bottom bar.
+	successLifetime = 2 * time.Second
+)
+
+// The type of the bottom bar status message:
+//
+//	statusTypeError, statusTypeSuccess
+type statusType int
+
+const (
+	statusTypeError statusType = iota
+	statusTypeSuccess
 )
 
 var ctx = context.Background()
@@ -41,6 +54,8 @@ type model struct {
 	// Current height of the terminal.
 	terminalHeight int
 
+	// Type of the status message.
+	statusType statusType
 	// Error text displayed at the bottom of the screen.
 	statusText string
 	// Current "generation" number for the status. Incremented every time the status
@@ -85,6 +100,10 @@ func (m *model) updateFromState(state libts.State) {
 				&ui.TitleSubmenuItem{Label: "Name"},
 				&ui.LabeledSubmenuItem{
 					Label: state.Self.DNSName[:len(state.Self.DNSName)-1],
+					OnActivate: func() tea.Msg {
+						clipboard.Write(clipboard.FmtText, []byte(state.Self.DNSName[:len(state.Self.DNSName)-1]))
+						return successMsg("Copied full domain to clipboard.")
+					},
 				},
 				&ui.SpacerSubmenuItem{},
 				&ui.TitleSubmenuItem{Label: "IPs"},
@@ -93,6 +112,18 @@ func (m *model) updateFromState(state libts.State) {
 			for _, addr := range state.Self.TailscaleIPs {
 				submenuItems = append(submenuItems, &ui.LabeledSubmenuItem{
 					Label: addr.String(),
+					OnActivate: func() tea.Msg {
+						clipboard.Write(clipboard.FmtText, []byte(addr.String()))
+
+						var versionName string
+						if addr.Is4() {
+							versionName = "IPv4"
+						} else {
+							versionName = "IPv6"
+						}
+
+						return successMsg(fmt.Sprintf("Copied %s address to clipboard.", versionName))
+					},
 				})
 			}
 
@@ -101,10 +132,17 @@ func (m *model) updateFromState(state libts.State) {
 				&ui.TitleSubmenuItem{Label: "Dev Info"},
 				&ui.LabeledSubmenuItem{
 					Label: string(state.Self.ID),
+					OnActivate: func() tea.Msg {
+						clipboard.Write(clipboard.FmtText, []byte(string(state.Self.ID)))
+						return successMsg("Copied Tailscale ID to clipboard.")
+					},
 				},
-				// &ui.SpacerSubmenuItem{},
 				&ui.LabeledSubmenuItem{
 					Label: state.Self.PublicKey.String(),
+					OnActivate: func() tea.Msg {
+						clipboard.Write(clipboard.FmtText, []byte(state.Self.PublicKey.String()))
+						return successMsg("Copied node key to clipboard.")
+					},
 				},
 			)
 
@@ -119,6 +157,10 @@ func (m *model) updateFromState(state libts.State) {
 					&ui.TitleSubmenuItem{Label: "Tailnet Lock: " + statusText},
 					&ui.LabeledSubmenuItem{
 						Label: state.LockKey.CLIString(),
+						OnActivate: func() tea.Msg {
+							clipboard.Write(clipboard.FmtText, []byte(state.LockKey.CLIString()))
+							return successMsg("Copied tailnet lock key to clipboard.")
+						},
 					},
 				)
 			}

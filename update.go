@@ -21,8 +21,11 @@ func makeTick(interval time.Duration) tea.Cmd {
 // Message representing a Tailscale state update and any error that occurred (optional).
 type stateMsg libts.State
 
-// Message representing some temporary error.
+// Message representing some transient error.
 type errorMsg error
+
+// A success message to temporarily display.
+type successMsg string
 
 // Message to clear a status because its visiblity time elapsed.
 // Stores an int corresponding to the statusGen, and this message should be
@@ -62,12 +65,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Display errors.
 	case errorMsg:
+		m.statusType = statusTypeError
 		m.statusText = msg.Error()
 		m.statusGen++
-		gen := m.statusGen
 		return m, func() tea.Msg {
-			time.Sleep(statusLifetime)
-			return statusExpiredMsg(gen)
+			time.Sleep(errorLifetime)
+			return statusExpiredMsg(m.statusGen)
+		}
+
+	// Display successes, too!
+	case successMsg:
+		m.statusType = statusTypeSuccess
+		m.statusText = string(msg)
+		m.statusGen++
+		return m, func() tea.Msg {
+			time.Sleep(successLifetime)
+			return statusExpiredMsg(m.statusGen)
 		}
 
 	// Clear the status when it expires.
