@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"fmt"
-	"strings"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -34,32 +31,26 @@ func (i *AppmenuItem) render(isSelected bool, isAnySubmenuOpen bool) string {
 		if isAnySubmenuOpen {
 			style = style.
 				Faint(true)
-		} else {
-			// Unstyled.
-		}
+		} // else unstyled
 	}
 
 	left := style.
-		Width(15).
-		Padding(0, 1).
+		PaddingLeft(1).
 		Render(i.LeftLabel)
 	right := style.
-		Width(35).
+		Width(35 - lipgloss.Width(left)).
 		Faint(true).
 		AlignHorizontal(lipgloss.Right).
 		Render(i.RightLabel)
 	arrow := style.
 		Padding(0, 1).
 		Render(">")
-
 	return left + right + arrow
 }
 
 // A state container for the main application menu.
 // Each menu item contains a submenu which can be opened and closed.
 type Appmenu struct {
-	// Text to be displayed when the menu is empty.
-	PlaceholderText string
 	// List of menu items.
 	items []*AppmenuItem
 	// Current menu item index.
@@ -71,11 +62,7 @@ type Appmenu struct {
 // Render the menu to a string.
 func (appmenu *Appmenu) Render() string {
 	if len(appmenu.items) == 0 {
-		divider := lipgloss.NewStyle().
-			Faint(true).
-			Render(strings.Repeat("-", lipgloss.Width(appmenu.PlaceholderText)))
-
-		return fmt.Sprintf("%s\n\n%s\n\n%s", divider, appmenu.PlaceholderText, divider)
+		return ""
 	}
 
 	s := ""

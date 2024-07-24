@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/neuralink/tsui/libts"
 	"github.com/neuralink/tsui/ui"
 	"tailscale.com/ipn"
@@ -16,7 +17,12 @@ import (
 // This has to be a var or -X can't override it.
 var Version = "local"
 
-const defaultTickInterval = 2 * time.Second
+const (
+	// Default rate at which to poll Tailscale for status updates.
+	tickInterval = 2 * time.Second
+	// How long to display status/error messages in the bottom bar before clearing them.
+	statusLifetime = 5 * time.Second
+)
 
 var ctx = context.Background()
 
@@ -30,22 +36,21 @@ type model struct {
 	deviceInfo *ui.AppmenuItem
 	exitNodes  *ui.AppmenuItem
 
-	// Rate at which to poll Tailscale for status updates.
-	tickInterval time.Duration
 	// Current width of the terminal.
 	terminalWidth int
 	// Current height of the terminal.
 	terminalHeight int
+
+	// Error text displayed at the bottom of the screen.
+	statusText string
+	// Current "generation" number for the status. Incremented every time the status
+	// is updated and used to keep track of status expiration messages.
+	statusGen int
 }
 
 // Initialize the application state.
-func initialModel() model {
+func initialModel() (model, error) {
 	m := model{
-		tickInterval: defaultTickInterval,
-		menu: ui.Appmenu{
-			PlaceholderText: "The Tailscale daemon isn't started.\n\nPress . to bring Tailscale up.",
-		},
-
 		// Main menu items.
 		deviceInfo: &ui.AppmenuItem{LeftLabel: "Device Info"},
 		exitNodes: &ui.AppmenuItem{
@@ -54,13 +59,20 @@ func initialModel() model {
 		},
 	}
 
-	// Discard the error because this just implies that Tailscale is off.
-	status, _ := libts.Status(ctx)
-	lock, _ := libts.LockStatus(ctx)
+	status, err := libts.Status(ctx)
+	if err != nil {
+		return m, err
+	}
+
+	lock, err := libts.LockStatus(ctx)
+	if err != nil {
+		return m, err
+	}
+
 	state := libts.MakeState(status, lock)
 	m.updateFromState(state)
 
-	return m
+	return m, nil
 }
 
 func (m *model) updateFromState(state libts.State) {
@@ -121,7 +133,10 @@ func (m *model) updateFromState(state libts.State) {
 				LabeledSubmenuItem: ui.LabeledSubmenuItem{
 					Label: "None",
 					OnActivate: func() tea.Msg {
-						libts.SetExitNode(ctx, nil)
+						err := libts.SetExitNode(ctx, nil)
+						if err != nil {
+							return errorMsg(err)
+						}
 						return updateState()
 					},
 				},
@@ -141,7 +156,10 @@ func (m *model) updateFromState(state libts.State) {
 					LabeledSubmenuItem: ui.LabeledSubmenuItem{
 						Label: label,
 						OnActivate: func() tea.Msg {
-							libts.SetExitNode(ctx, exitNode)
+							err := libts.SetExitNode(ctx, exitNode)
+							if err != nil {
+								return errorMsg(err)
+							}
 							return updateState()
 						},
 						IsDim: !exitNode.Online,
@@ -171,10 +189,22 @@ func (m model) Init() tea.Cmd {
 	return updateState
 }
 
+func renderMainError(err error) string {
+	return lipgloss.NewStyle().
+		Foreground(ui.Red).
+		Render(err.Error())
+}
+
 func main() {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	m, err := initialModel()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, renderMainError(err))
+		os.Exit(1)
+	}
+
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("fatal error: %v\n", err)
+		fmt.Fprintln(os.Stderr, renderMainError(err))
 		os.Exit(1)
 	}
 }

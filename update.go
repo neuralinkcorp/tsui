@@ -18,14 +18,30 @@ func makeTick(interval time.Duration) tea.Cmd {
 	})
 }
 
-// Message representing a Tailscale state update.
+// Message representing a Tailscale state update and any error that occurred (optional).
 type stateMsg libts.State
+
+// Message representing some temporary error.
+type errorMsg error
+
+// Message to clear a status because its visiblity time elapsed.
+// Stores an int corresponding to the statusGen, and this message should be
+// ignored if the current statusGen is later.
+type statusExpiredMsg int
 
 // Command that retrives a new Tailscale state and triggers a stateMsg.
 // This will be run in a goroutine by the bubbletea runtime.
 func updateState() tea.Msg {
-	status, _ := libts.Status(ctx)
-	lock, _ := libts.LockStatus(ctx)
+	status, err := libts.Status(ctx)
+	if err != nil {
+		return errorMsg(err)
+	}
+
+	lock, err := libts.LockStatus(ctx)
+	if err != nil {
+		return errorMsg(err)
+	}
+
 	state := libts.MakeState(status, lock)
 	return stateMsg(state)
 }
@@ -33,7 +49,7 @@ func updateState() tea.Msg {
 // Bubbletea update function.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Create our ticker command which will be our "default return" in the absence of any other commands.
-	tick := makeTick(5 * m.tickInterval)
+	tick := makeTick(5 * tickInterval)
 
 	switch msg := msg.(type) {
 	// On tick, fetch a new state.
@@ -43,6 +59,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// When the state updater returns, update our model.
 	case stateMsg:
 		m.updateFromState(libts.State(msg))
+
+	// Display errors.
+	case errorMsg:
+		m.statusText = msg.Error()
+		m.statusGen++
+		gen := m.statusGen
+		return m, func() tea.Msg {
+			time.Sleep(statusLifetime)
+			return statusExpiredMsg(gen)
+		}
+
+	// Clear the status when it expires.
+	case statusExpiredMsg:
+		if int(msg) >= m.statusGen {
+			m.statusText = ""
+		}
 
 	case tea.WindowSizeMsg:
 		needsClear := msg.Width < m.terminalWidth || msg.Height > m.terminalHeight
@@ -84,14 +116,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.state.BackendState {
 			case ipn.Running.String():
 				return m, func() tea.Msg {
-					libts.Down(ctx)
+					err := libts.Down(ctx)
+					if err != nil {
+						return errorMsg(err)
+					}
 					return updateState()
 				}
 
 			case ipn.NoState.String():
 			case ipn.Stopped.String():
 				return m, func() tea.Msg {
-					libts.Up(ctx)
+					err := libts.Up(ctx)
+					if err != nil {
+						return errorMsg(err)
+					}
 					return updateState()
 				}
 			}

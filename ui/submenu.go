@@ -19,7 +19,7 @@ type SubmenuItem interface {
 	render(isSelected bool, isSubmenuOpen bool) string
 }
 
-const submenuItemWidth = 40
+const submenuItemWidth = 45
 
 // A menu item with a label.
 type LabeledSubmenuItem struct {
