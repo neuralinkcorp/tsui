@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -170,17 +171,10 @@ func (m model) Init() tea.Cmd {
 	return updateState
 }
 
-// func main() {
-// 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
-// 	if _, err := p.Run(); err != nil {
-// 		fmt.Printf("fatal error: %v\n", err)
-// 		os.Exit(1)
-// 	}
-// }
-
 func main() {
-	err := libts.Up(ctx)
-	if err != nil {
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
 		fmt.Printf("fatal error: %v\n", err)
+		os.Exit(1)
 	}
 }
