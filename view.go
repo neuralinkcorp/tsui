@@ -190,5 +190,5 @@ func (m model) View() string {
 			divider+"\n\n"+text+"\n\n"+divider)
 	}
 
-	return top + middle + bottom
+	return top + "\n" + middle + "\n" + bottom
 }
