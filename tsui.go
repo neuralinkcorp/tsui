@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,11 +11,11 @@ import (
 	"tailscale.com/ipn"
 )
 
-const (
-	version = "0.0.1-beta1"
+// Injected at build time by the flake.nix.
+// This has to be a var or -X can't override it.
+var Version = "local"
 
-	defaultTickInterval = 2 * time.Second
-)
+const defaultTickInterval = 2 * time.Second
 
 var ctx = context.Background()
 
@@ -26,8 +25,9 @@ type model struct {
 	state libts.State
 
 	// Main menu.
-	menu      ui.Appmenu
-	exitNodes *ui.AppmenuItem
+	menu       ui.Appmenu
+	deviceInfo *ui.AppmenuItem
+	exitNodes  *ui.AppmenuItem
 
 	// Rate at which to poll Tailscale for status updates.
 	tickInterval time.Duration
@@ -35,55 +35,6 @@ type model struct {
 	terminalWidth int
 	// Current height of the terminal.
 	terminalHeight int
-}
-
-func (m *model) updateFromState(state libts.State) {
-	m.state = state
-
-	// Update the exit node submenu.
-	{
-		exitNodeItems := make([]ui.SubmenuItem, 2+len(m.state.SortedExitNodes))
-		exitNodeItems[0] = &ui.ToggleableSubmenuItem{
-			Label: "None",
-			OnActivate: func() tea.Msg {
-				libts.SetExitNode(ctx, nil)
-				return updateState()
-			},
-			IsActive: m.state.CurrentExitNode == nil,
-		}
-		exitNodeItems[1] = &ui.DividerSubmenuItem{}
-		for i, exitNode := range m.state.SortedExitNodes {
-			// Offset for the "None" item and the divider.
-			i += 2
-
-			label := libts.PeerName(exitNode)
-			if !exitNode.Online {
-				label += " (offline)"
-			}
-
-			exitNodeItems[i] = &ui.ToggleableSubmenuItem{
-				Label: label,
-				OnActivate: func() tea.Msg {
-					libts.SetExitNode(ctx, exitNode)
-					return updateState()
-				},
-				IsActive: m.state.CurrentExitNode != nil && exitNode.ID == *m.state.CurrentExitNode,
-				IsDim:    !exitNode.Online,
-			}
-		}
-
-		m.exitNodes.RightLabel = m.state.CurrentExitNodeName
-		m.exitNodes.Submenu.SetItems(exitNodeItems)
-	}
-
-	if m.state.BackendState == ipn.Running.String() {
-		m.menu.Items = []*ui.AppmenuItem{
-			m.exitNodes,
-		}
-	} else {
-		m.menu.Items = []*ui.AppmenuItem{}
-	}
-	m.menu.ClampCursor()
 }
 
 // Initialize the application state.
@@ -95,6 +46,7 @@ func initialModel() model {
 		},
 
 		// Main menu items.
+		deviceInfo: &ui.AppmenuItem{LeftLabel: "Device Info"},
 		exitNodes: &ui.AppmenuItem{
 			LeftLabel: "Exit Nodes",
 			Submenu:   ui.Submenu{Exclusivity: ui.SubmenuExclusivityOne},
@@ -103,10 +55,113 @@ func initialModel() model {
 
 	// Discard the error because this just implies that Tailscale is off.
 	status, _ := libts.Status(ctx)
-	state := libts.MakeState(status)
+	lock, _ := libts.LockStatus(ctx)
+	state := libts.MakeState(status, lock)
 	m.updateFromState(state)
 
 	return m
+}
+
+func (m *model) updateFromState(state libts.State) {
+	m.state = state
+
+	if m.state.BackendState == ipn.Running.String() {
+		// Update the device info submenu.
+		{
+			submenuItems := []ui.SubmenuItem{
+				&ui.TitleSubmenuItem{Label: "Name"},
+				&ui.LabeledSubmenuItem{
+					Label: state.Self.DNSName[:len(state.Self.DNSName)-1],
+				},
+				&ui.SpacerSubmenuItem{},
+				&ui.TitleSubmenuItem{Label: "IPs"},
+			}
+
+			for _, addr := range state.Self.TailscaleIPs {
+				submenuItems = append(submenuItems, &ui.LabeledSubmenuItem{
+					Label: addr.String(),
+				})
+			}
+
+			submenuItems = append(submenuItems,
+				&ui.SpacerSubmenuItem{},
+				&ui.TitleSubmenuItem{Label: "Dev Info"},
+				&ui.LabeledSubmenuItem{
+					Label: string(state.Self.ID),
+				},
+				// &ui.SpacerSubmenuItem{},
+				&ui.LabeledSubmenuItem{
+					Label: state.Self.PublicKey.String(),
+				},
+			)
+
+			if state.LockKey != nil {
+				statusText := "Online"
+				if state.IsLockedOut {
+					statusText = "Locked Out"
+				}
+
+				submenuItems = append(submenuItems,
+					&ui.SpacerSubmenuItem{},
+					&ui.TitleSubmenuItem{Label: "Tailnet Lock: " + statusText},
+					&ui.LabeledSubmenuItem{
+						Label: state.LockKey.CLIString(),
+					},
+				)
+			}
+
+			m.deviceInfo.Submenu.SetItems(submenuItems)
+		}
+
+		// Update the exit node submenu.
+		{
+			exitNodeItems := make([]ui.SubmenuItem, 2+len(m.state.SortedExitNodes))
+			exitNodeItems[0] = &ui.ToggleableSubmenuItem{
+				LabeledSubmenuItem: ui.LabeledSubmenuItem{
+					Label: "None",
+					OnActivate: func() tea.Msg {
+						libts.SetExitNode(ctx, nil)
+						return updateState()
+					},
+				},
+				IsActive: m.state.CurrentExitNode == nil,
+			}
+			exitNodeItems[1] = &ui.DividerSubmenuItem{}
+			for i, exitNode := range m.state.SortedExitNodes {
+				// Offset for the "None" item and the divider.
+				i += 2
+
+				label := libts.PeerName(exitNode)
+				if !exitNode.Online {
+					label += " (offline)"
+				}
+
+				exitNodeItems[i] = &ui.ToggleableSubmenuItem{
+					LabeledSubmenuItem: ui.LabeledSubmenuItem{
+						Label: label,
+						OnActivate: func() tea.Msg {
+							libts.SetExitNode(ctx, exitNode)
+							return updateState()
+						},
+						IsDim: !exitNode.Online,
+					},
+					IsActive: m.state.CurrentExitNode != nil && exitNode.ID == *m.state.CurrentExitNode,
+				}
+			}
+
+			m.exitNodes.RightLabel = m.state.CurrentExitNodeName
+			m.exitNodes.Submenu.SetItems(exitNodeItems)
+		}
+
+		// Make sure the menu items are visible.
+		m.menu.SetItems([]*ui.AppmenuItem{
+			m.deviceInfo,
+			m.exitNodes,
+		})
+	} else {
+		// Hide the menu items if not connected.
+		m.menu.SetItems([]*ui.AppmenuItem{})
+	}
 }
 
 // Bubbletea init function.
@@ -115,10 +170,17 @@ func (m model) Init() tea.Cmd {
 	return updateState
 }
 
+// func main() {
+// 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+// 	if _, err := p.Run(); err != nil {
+// 		fmt.Printf("fatal error: %v\n", err)
+// 		os.Exit(1)
+// 	}
+// }
+
 func main() {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
+	err := libts.Up(ctx)
+	if err != nil {
 		fmt.Printf("fatal error: %v\n", err)
-		os.Exit(1)
 	}
 }

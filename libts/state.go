@@ -7,6 +7,7 @@ import (
 	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
+	"tailscale.com/types/key"
 )
 
 // Opinionated, sanitized subset of Tailscale state.
@@ -15,18 +16,28 @@ type State struct {
 	//  "NoState", "NeedsLogin", "NeedsMachineAuth", "Stopped",
 	//  "Starting", "Running".
 	BackendState string
-	// Auth URL. Empty if the user doesn't need to be authenticated.
-	AuthURL string
 	// Current Tailscale version. This is a shortened version string like "1.70.0".
 	TSVersion string
+
+	// Auth URL. Empty if the user doesn't need to be authenticated.
+	AuthURL string
+	// User profile of the currently logged in user or nil if unknown.
+	User *tailcfg.UserProfile
+
+	// Peer status of the local node.
+	Self *ipnstate.PeerStatus
+
+	// Tailnet lock key. Nil if not enabled.
+	LockKey *key.NLPublic
+	// True if the node is locked out by tailnet lock.
+	IsLockedOut bool
+
+	// List of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
+	SortedExitNodes []*ipnstate.PeerStatus
 	// ID of the currently selected exit node or nil if none is selected.
 	CurrentExitNode *tailcfg.StableNodeID
 	// Name of the currently selected exit node or an empty string if none is selected.
 	CurrentExitNodeName string
-	// User profile of the currently logged in user or nil if unknown.
-	User *tailcfg.UserProfile
-	// List of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
-	SortedExitNodes []*ipnstate.PeerStatus
 }
 
 // Get a sorted list of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
@@ -51,7 +62,7 @@ func getSortedExitNodes(tsStatus *ipnstate.Status) []*ipnstate.PeerStatus {
 }
 
 // Make a State from an ipnstate.Status. Safely returns an empty state value if the status is nil.
-func MakeState(tsStatus *ipnstate.Status) State {
+func MakeState(tsStatus *ipnstate.Status, lock *ipnstate.NetworkLockStatus) State {
 	if tsStatus == nil {
 		return State{
 			BackendState: ipn.NoState.String(),
@@ -62,6 +73,7 @@ func MakeState(tsStatus *ipnstate.Status) State {
 		AuthURL:         tsStatus.AuthURL,
 		BackendState:    tsStatus.BackendState,
 		TSVersion:       tsStatus.Version,
+		Self:            tsStatus.Self,
 		SortedExitNodes: getSortedExitNodes(tsStatus),
 	}
 
@@ -73,6 +85,14 @@ func MakeState(tsStatus *ipnstate.Status) State {
 	if tsStatus.Self != nil {
 		user := tsStatus.User[tsStatus.Self.UserID]
 		state.User = &user
+	}
+
+	if lock.Enabled && lock.NodeKey != nil && !lock.PublicKey.IsZero() {
+		state.LockKey = &lock.PublicKey
+
+		if !lock.NodeKeySigned && state.BackendState == ipn.Running.String() {
+			state.IsLockedOut = true
+		}
 	}
 
 	if tsStatus.ExitNodeStatus != nil {

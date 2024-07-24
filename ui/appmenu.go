@@ -61,7 +61,7 @@ type Appmenu struct {
 	// Text to be displayed when the menu is empty.
 	PlaceholderText string
 	// List of menu items.
-	Items []*AppmenuItem
+	items []*AppmenuItem
 	// Current menu item index.
 	cursor int
 	// Whether the selected submenu is open.
@@ -70,7 +70,7 @@ type Appmenu struct {
 
 // Render the menu to a string.
 func (appmenu *Appmenu) Render() string {
-	if len(appmenu.Items) == 0 {
+	if len(appmenu.items) == 0 {
 		divider := lipgloss.NewStyle().
 			Faint(true).
 			Render(strings.Repeat("-", lipgloss.Width(appmenu.PlaceholderText)))
@@ -80,7 +80,7 @@ func (appmenu *Appmenu) Render() string {
 
 	s := ""
 
-	for i, item := range appmenu.Items {
+	for i, item := range appmenu.items {
 		if i > 0 {
 			s += "\n"
 		}
@@ -88,7 +88,7 @@ func (appmenu *Appmenu) Render() string {
 	}
 
 	// Render the submenu to the right of the appmenu.
-	s = lipgloss.JoinHorizontal(lipgloss.Top, s, appmenu.Items[appmenu.cursor].Submenu.Render(appmenu.isOpen))
+	s = lipgloss.JoinHorizontal(lipgloss.Top, s, appmenu.items[appmenu.cursor].Submenu.Render(appmenu.isOpen))
 
 	return s
 }
@@ -97,10 +97,10 @@ func (appmenu *Appmenu) Render() string {
 func (appmenu *Appmenu) CursorDown() {
 	if appmenu.isOpen {
 		// Move the cursor in the submenu.
-		appmenu.Items[appmenu.cursor].Submenu.CursorDown()
+		appmenu.items[appmenu.cursor].Submenu.CursorDown()
 	} else {
 		// Move the cursor in the appmenu.
-		if appmenu.cursor < len(appmenu.Items)-1 {
+		if appmenu.cursor < len(appmenu.items)-1 {
 			appmenu.cursor++
 		}
 	}
@@ -110,7 +110,7 @@ func (appmenu *Appmenu) CursorDown() {
 func (appmenu *Appmenu) CursorUp() {
 	if appmenu.isOpen {
 		// Move the cursor in the submenu.
-		appmenu.Items[appmenu.cursor].Submenu.CursorUp()
+		appmenu.items[appmenu.cursor].Submenu.CursorUp()
 	} else {
 		// Move the cursor in the appmenu.
 		if appmenu.cursor > 0 {
@@ -119,16 +119,22 @@ func (appmenu *Appmenu) CursorUp() {
 	}
 }
 
+// Set the items list and ensure the cursor is within bounds.
+func (appmenu *Appmenu) SetItems(items []*AppmenuItem) {
+	appmenu.items = items
+	appmenu.clampCursor()
+}
+
 // Ensure the cursor is within bounds.
-func (appmenu *Appmenu) ClampCursor() {
-	if len(appmenu.Items) == 0 {
+func (appmenu *Appmenu) clampCursor() {
+	if len(appmenu.items) == 0 {
 		appmenu.cursor = 0
 		appmenu.isOpen = false
 		return
 	}
 
-	if appmenu.cursor > len(appmenu.Items)-1 {
-		appmenu.cursor = len(appmenu.Items) - 1
+	if appmenu.cursor > len(appmenu.items)-1 {
+		appmenu.cursor = len(appmenu.items) - 1
 	}
 }
 
@@ -137,11 +143,11 @@ func (appmenu *Appmenu) ClampCursor() {
 func (appmenu *Appmenu) Activate() tea.Cmd {
 	if appmenu.isOpen {
 		// Activate the item in the submenu.
-		return appmenu.Items[appmenu.cursor].Submenu.Activate()
-	} else if len(appmenu.Items) > 0 {
+		return appmenu.items[appmenu.cursor].Submenu.Activate()
+	} else if len(appmenu.items) > 0 {
 		// Open the submenu.
 		appmenu.isOpen = true
-		appmenu.Items[appmenu.cursor].Submenu.ResetCursor()
+		appmenu.items[appmenu.cursor].Submenu.ResetCursor()
 	}
 	return nil
 }

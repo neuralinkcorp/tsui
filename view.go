@@ -14,12 +14,13 @@ var logo = strings.Join([]string{
 	` / __/ ___/ / / / / `,
 	`/ /_(__  ) /_/ / /  `,
 	`\__/____/\__,_/_/   `,
-	`          by n7k    `,
+	`    by neuralink    `,
 }, "\n")
 
 // Format the status button in the header bar.
 func statusButton(backendState string, isUsingExitNode bool) string {
-	buttonStyle := lipgloss.NewStyle().Padding(0, 1)
+	buttonStyle := lipgloss.NewStyle().
+		Padding(0, 1)
 
 	switch backendState {
 	case ipn.NeedsLogin.String():
@@ -102,7 +103,7 @@ func (m model) View() string {
 		}
 
 		// App versions.
-		versions := "tsui:      " + version + "\n"
+		versions := "tsui:      " + Version + "\n"
 		versions += "tailscale: "
 		if m.state.TSVersion != "" {
 			versions += m.state.TSVersion
@@ -119,10 +120,29 @@ func (m model) View() string {
 			Render(" ")
 
 		section := lipgloss.JoinHorizontal(lipgloss.Center, logo, status, spacer, versions)
-		s.WriteString(section + "\n\n\n")
+		s.WriteString(section + "\n\n")
 	}
 
-	s.WriteString(m.menu.Render())
+	if m.state.IsLockedOut {
+		heading := lipgloss.NewStyle().
+			Background(ui.Yellow).
+			Foreground(ui.Black).
+			Bold(true).
+			Padding(0, 1).
+			Render("Warning: Locked Out")
+
+		bodyText := "This node is locked out by tailnet lock. Please contact an administrator of your Tailscale network to authorize your connection."
+
+		lockWarning := lipgloss.NewStyle().
+			Foreground(ui.Yellow).
+			Width(80).
+			Align(lipgloss.Center).
+			Render(heading + "\n" + bodyText)
+		lockWarning = lipgloss.PlaceHorizontal(m.terminalWidth, lipgloss.Center, lockWarning)
+		s.WriteString(lockWarning + "\n\n")
+	}
+
+	s.WriteString("\n" + m.menu.Render())
 
 	return s.String()
 }

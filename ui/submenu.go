@@ -19,20 +19,58 @@ type SubmenuItem interface {
 	render(isSelected bool, isSubmenuOpen bool) string
 }
 
-// A menu item with a label that can be toggled active or inactive.
-type ToggleableSubmenuItem struct {
+const submenuItemWidth = 40
+
+// A menu item with a label.
+type LabeledSubmenuItem struct {
 	// The text to be displayed for this menu item.
 	Label string
 	// Callback when the item is activated.
 	OnActivate tea.Cmd
-	// Whether this item is currently active.
-	IsActive bool
 	// Whether this item is visibly de-emphasized.
 	IsDim bool
 }
 
-func (item *ToggleableSubmenuItem) isSelectable() bool {
+func (item *LabeledSubmenuItem) isSelectable() bool {
 	return true
+}
+
+func (item *LabeledSubmenuItem) onActivate() tea.Cmd {
+	return item.OnActivate
+}
+
+func (item *LabeledSubmenuItem) clearActiveFlag() {
+	// No-op because this item is not toggleable.
+}
+
+func (item *LabeledSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
+	style := lipgloss.NewStyle().
+		PaddingRight(1).
+		PaddingLeft(2).
+		Width(submenuItemWidth)
+
+	if isSubmenuOpen {
+		if isSelected {
+			style = style.
+				Background(Secondary).
+				Foreground(Black)
+		} else if item.IsDim {
+			style = style.
+				Faint(true)
+		}
+	} else {
+		style = style.
+			Faint(true)
+	}
+
+	return style.Render(item.Label)
+}
+
+// A menu item with a label that can be toggled active or inactive.
+type ToggleableSubmenuItem struct {
+	LabeledSubmenuItem
+	// Whether this item is currently active.
+	IsActive bool
 }
 
 func (item *ToggleableSubmenuItem) onActivate() tea.Cmd {
@@ -40,7 +78,7 @@ func (item *ToggleableSubmenuItem) onActivate() tea.Cmd {
 		return nil
 	}
 	item.IsActive = true
-	return item.OnActivate
+	return item.LabeledSubmenuItem.onActivate()
 }
 
 func (item *ToggleableSubmenuItem) clearActiveFlag() {
@@ -50,7 +88,7 @@ func (item *ToggleableSubmenuItem) clearActiveFlag() {
 func (item *ToggleableSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
 	style := lipgloss.NewStyle().
 		Padding(0, 1).
-		Width(35)
+		Width(submenuItemWidth)
 
 	if isSubmenuOpen {
 		if item.IsActive {
@@ -97,6 +135,46 @@ func (d *DividerSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string 
 	return lipgloss.NewStyle().
 		Faint(true).
 		Render("  --")
+}
+
+// An empty spacer line.
+type SpacerSubmenuItem struct{}
+
+func (s *SpacerSubmenuItem) isSelectable() bool {
+	return false
+}
+
+func (s *SpacerSubmenuItem) onActivate() tea.Cmd {
+	return nil
+}
+
+func (s *SpacerSubmenuItem) clearActiveFlag() {}
+
+func (s *SpacerSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
+	return ""
+}
+
+// A title for a section of a menu.
+type TitleSubmenuItem struct {
+	// The text to be displayed for this menu item.
+	Label string
+}
+
+func (i *TitleSubmenuItem) isSelectable() bool {
+	return false
+}
+
+func (i *TitleSubmenuItem) onActivate() tea.Cmd {
+	return nil
+}
+
+func (i *TitleSubmenuItem) clearActiveFlag() {}
+
+func (i *TitleSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
+	return lipgloss.NewStyle().
+		Faint(true).
+		PaddingLeft(2).
+		Render(i.Label)
 }
 
 type SubmenuExclusivity int

@@ -25,7 +25,8 @@ type stateMsg libts.State
 // This will be run in a goroutine by the bubbletea runtime.
 func updateState() tea.Msg {
 	status, _ := libts.Status(ctx)
-	state := libts.MakeState(status)
+	lock, _ := libts.LockStatus(ctx)
+	state := libts.MakeState(status, lock)
 	return stateMsg(state)
 }
 
@@ -83,14 +84,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.state.BackendState {
 			case ipn.Running.String():
 				return m, func() tea.Msg {
-					libts.SetWantRunning(ctx, false)
+					libts.Down(ctx)
 					return updateState()
 				}
 
 			case ipn.NoState.String():
 			case ipn.Stopped.String():
 				return m, func() tea.Msg {
-					libts.SetWantRunning(ctx, true)
+					libts.Up(ctx)
 					return updateState()
 				}
 			}

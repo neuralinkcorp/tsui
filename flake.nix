@@ -4,11 +4,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      # to work with older version of flakes
-      lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
-
-      # Generate a user-friendly version number.
-      version = builtins.substring 0 8 lastModifiedDate;
+      version = "0.0.1";
 
       # System types to support.
       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
@@ -31,6 +27,11 @@
             inherit version;
             # In 'nix develop', we don't need a copy of the source tree in the Nix store.
             src = ./.;
+
+            # Inject the version info in the binary.
+            ldflags = [
+              "-X main.Version=${version}"
+            ];
 
             # This hash locks the dependencies of this package. It is
             # necessary because of how Go requires network access to resolve

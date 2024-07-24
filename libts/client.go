@@ -16,8 +16,23 @@ func Status(ctx context.Context) (*ipnstate.Status, error) {
 	return ts.Status(ctx)
 }
 
-// Start or stop the Tailscale daemon.
-func SetWantRunning(ctx context.Context, wantRunning bool) error {
+// Return the tailnet lock status of the current node.
+func LockStatus(ctx context.Context) (*ipnstate.NetworkLockStatus, error) {
+	return ts.NetworkLockStatus(ctx)
+}
+
+// Start the Tailscale daemon.
+func Up(ctx context.Context) error {
+	return setWantRunning(ctx, true)
+}
+
+// Stop the Tailscale daemon.
+func Down(ctx context.Context) error {
+	return setWantRunning(ctx, false)
+}
+
+// Start or stop the Tailscale daemon, if we already have a socket connection.
+func setWantRunning(ctx context.Context, wantRunning bool) error {
 	_, err := ts.EditPrefs(ctx, &ipn.MaskedPrefs{
 		Prefs: ipn.Prefs{
 			WantRunning: wantRunning,
