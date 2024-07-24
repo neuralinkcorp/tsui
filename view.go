@@ -43,7 +43,7 @@ func statusButton(backendState string, isUsingExitNode bool) string {
 	case ipn.Running.String():
 		text := "Connected"
 		if isUsingExitNode {
-			text += " - Using Exit Node"
+			text += " - Exit Node"
 		}
 
 		return buttonStyle.
@@ -75,8 +75,14 @@ func (m model) View() string {
 			Render(logo)
 
 		status := "Tailscale Status: "
-
-		status += statusButton(m.state.BackendState, m.state.CurrentExitNode != nil) + "\n"
+		status += statusButton(m.state.BackendState, m.state.CurrentExitNode != nil)
+		if m.state.BackendState == ipn.Running.String() {
+			status += lipgloss.NewStyle().
+				Faint(true).
+				PaddingLeft(1).
+				Render("(press . to stop)")
+		}
+		status += "\n"
 
 		// Extra info; either auth URL or user login name, depending on the backend state.
 		if m.state.AuthURL != "" {

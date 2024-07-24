@@ -16,6 +16,17 @@ func Status(ctx context.Context) (*ipnstate.Status, error) {
 	return ts.Status(ctx)
 }
 
+// Start or stop the Tailscale daemon.
+func SetWantRunning(ctx context.Context, wantRunning bool) error {
+	_, err := ts.EditPrefs(ctx, &ipn.MaskedPrefs{
+		Prefs: ipn.Prefs{
+			WantRunning: wantRunning,
+		},
+		WantRunningSet: true,
+	})
+	return err
+}
+
 // Set the exit node to the given peer, or clear the exit node if peer is nil.
 func SetExitNode(ctx context.Context, peer *ipnstate.PeerStatus) error {
 	var prefs ipn.Prefs
