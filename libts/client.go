@@ -2,7 +2,6 @@ package libts
 
 import (
 	"context"
-	"fmt"
 
 	"tailscale.com/client/tailscale"
 	"tailscale.com/ipn"
@@ -62,7 +61,7 @@ func SetExitNode(ctx context.Context, peer *ipnstate.PeerStatus) error {
 	} else {
 		status, err := ts.Status(ctx)
 		if err != nil {
-			return fmt.Errorf("get status: %w", err)
+			return err
 		}
 
 		prefs.SetExitNodeIP(peer.TailscaleIPs[0].String(), status)
@@ -74,7 +73,7 @@ func SetExitNode(ctx context.Context, peer *ipnstate.PeerStatus) error {
 		ExitNodeIPSet: true,
 	})
 	if err != nil {
-		return fmt.Errorf("edit prefs: %w", err)
+		return err
 	}
 
 	return nil
