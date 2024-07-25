@@ -108,6 +108,11 @@ func renderHeader(m *model) string {
 			Render(m.state.User.LoginName)
 	}
 
+	status += "\n"
+	status += lipgloss.NewStyle().
+		Faint(true).
+		Render("Traffic: " + formatBytes(m.state.Self.RxBytes+m.state.Self.TxBytes))
+
 	// App versions.
 	versions := "tsui:      " + Version + "\n"
 	versions += "tailscale: "
@@ -264,4 +269,18 @@ func (m model) View() string {
 	}
 
 	return top + "\n" + middle + "\n" + bottom
+}
+
+func formatBytes(bytes int64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d B", bytes)
+	} else if bytes < 1024*1024 {
+		return fmt.Sprintf("%.2fK", float64(bytes)/1024)
+	} else if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.2fM", float64(bytes)/1024/1024)
+	} else if bytes < 1024*1024*1024*1024 {
+		return fmt.Sprintf("%.2fG", float64(bytes)/1024/1024/1024)
+	} else {
+		return fmt.Sprintf("%.2fT", float64(bytes)/1024/1024/1024/1024)
+	}
 }
