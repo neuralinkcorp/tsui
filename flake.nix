@@ -40,7 +40,7 @@
             # mechanisms to tell you what the hash should be or determine what
             # it should be "out-of-band" with other tooling (eg. gomod2nix).
             # Remember to bump this hash when your dependencies change.
-            vendorHash = "sha256-rW3iB68IdSITGrlXUXR/+xIGXjZPvyBdU1QOtMRVXOQ=";
+            vendorHash = "sha256-758UX2EV1FKRlcTI8At16Wc6f2eUF2jSAaiMDFLax5I=";
           };
         });
 
