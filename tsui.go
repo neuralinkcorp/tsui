@@ -244,7 +244,6 @@ func (m *model) updateFromState(state libts.State) {
 				i++
 			}
 
-			m.networkDevices.RightLabel = m.state.CurrentExitNodeName
 			m.networkDevices.Submenu.SetItems(networkNodes)
 		}
 
