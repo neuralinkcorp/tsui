@@ -30,6 +30,11 @@ type State struct {
 	// Peer status of the local node.
 	Self *ipnstate.PeerStatus
 
+	// Health contains health check problems.
+	// Empty means everything is good. (or at least that no known
+	// problems are detected)
+	Health []string
+
 	// Tailnet lock key. Nil if not enabled.
 	LockKey *key.NLPublic
 	// True if the node is locked out by tailnet lock.
@@ -79,6 +84,7 @@ func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.Network
 		BackendState:    status.BackendState,
 		TSVersion:       status.Version,
 		Self:            status.Self,
+		Health:          status.Health,
 		SortedExitNodes: getSortedExitNodes(status),
 	}
 
