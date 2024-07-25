@@ -12,13 +12,13 @@ import (
 type Latency *int64
 
 var (
-	LastLatencyResult  = make(map[*ipnstate.PeerStatus]Latency)
-	LatencyTestLimiter = rate.NewLimiter(1, 1)
+	LastLatencyResult  = make(map[string]Latency)
+	LatencyTestLimiter = rate.NewLimiter(10, 1)
 )
 
-func GetExitNodeRtt(nodes []*ipnstate.PeerStatus) (map[*ipnstate.PeerStatus]Latency, error) {
+func GetExitNodeRtt(nodes []*ipnstate.PeerStatus) (map[string]Latency, error) {
 	if LatencyTestLimiter.Allow() {
-		latencies := make(map[*ipnstate.PeerStatus]Latency)
+		latencies := make(map[string]Latency)
 
 		if pinger, err := ping.New("0.0.0.0", ""); err == nil {
 			for _, node := range nodes {
@@ -34,7 +34,7 @@ func GetExitNodeRtt(nodes []*ipnstate.PeerStatus) (map[*ipnstate.PeerStatus]Late
 
 				ms := rtt.Milliseconds()
 
-				latencies[node] = &ms
+				latencies[node.HostName] = &ms
 			}
 		}
 

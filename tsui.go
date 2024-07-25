@@ -207,7 +207,7 @@ func (m *model) updateFromState(state *libts.State) {
 
 				label := libts.PeerName(exitNode)
 
-				if latency := m.state.ExitNodeLatencies[exitNode]; latency != nil {
+				if latency := m.state.ExitNodeLatencies[exitNode.HostName]; latency != nil {
 					label += fmt.Sprintf(" (latency %dms)", *latency)
 				}
 

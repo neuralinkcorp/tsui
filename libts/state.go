@@ -38,8 +38,8 @@ type State struct {
 
 	// List of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
 	SortedExitNodes []*ipnstate.PeerStatus
-	// Latency to exit node peers
-	ExitNodeLatencies map[*ipnstate.PeerStatus]realtime.Latency
+	// Latency to exit node peers by exit node hostname
+	ExitNodeLatencies map[string]realtime.Latency
 	// ID of the currently selected exit node or nil if none is selected.
 	CurrentExitNode *tailcfg.StableNodeID
 	// Name of the currently selected exit node or an empty string if none is selected.
