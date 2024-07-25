@@ -23,7 +23,7 @@ var Version = "local"
 
 const (
 	// Default rate at which to poll Tailscale for status updates.
-	tickInterval = 2 * time.Second
+	tickInterval = 5 * time.Second
 	// How long to keep error messages in the bottom bar.
 	errorLifetime = 5 * time.Second
 	// How long to keep success messages in the bottom bar.
