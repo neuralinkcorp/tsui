@@ -82,10 +82,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusType = statusTypeError
 		m.statusText = msg.Error()
 		m.statusGen++
-		return m, func() tea.Msg {
-			time.Sleep(errorLifetime)
-			return statusExpiredMsg(m.statusGen)
-		}
+		return m, tea.Batch(
+			// Make sure the state is up-to-date.
+			updateState,
+
+			func() tea.Msg {
+				time.Sleep(errorLifetime)
+				return statusExpiredMsg(m.statusGen)
+			},
+		)
 
 	// Display successes, too!
 	case successMsg:

@@ -41,6 +41,12 @@
             # it should be "out-of-band" with other tooling (eg. gomod2nix).
             # Remember to bump this hash when your dependencies change.
             vendorHash = "sha256-758UX2EV1FKRlcTI8At16Wc6f2eUF2jSAaiMDFLax5I=";
+
+            buildInputs = with pkgs; [
+              # For clipboard support.
+              darwin.apple_sdk.frameworks.Cocoa
+              xorg.libX11.dev
+            ];
           };
         });
 
