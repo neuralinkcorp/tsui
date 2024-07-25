@@ -48,10 +48,11 @@ type model struct {
 	state libts.State
 
 	// Main menu.
-	menu       ui.Appmenu
-	deviceInfo *ui.AppmenuItem
-	exitNodes  *ui.AppmenuItem
-	settings   *ui.AppmenuItem
+	menu           ui.Appmenu
+	deviceInfo     *ui.AppmenuItem
+	exitNodes      *ui.AppmenuItem
+	networkDevices *ui.AppmenuItem
+	settings       *ui.AppmenuItem
 
 	// Current width of the terminal.
 	terminalWidth int
@@ -75,7 +76,8 @@ func initialModel() (model, error) {
 		exitNodes: &ui.AppmenuItem{LeftLabel: "Exit Nodes",
 			Submenu: ui.Submenu{Exclusivity: ui.SubmenuExclusivityOne},
 		},
-		settings: &ui.AppmenuItem{LeftLabel: "Settings"},
+		networkDevices: &ui.AppmenuItem{LeftLabel: "Network Devices"},
+		settings:       &ui.AppmenuItem{LeftLabel: "Settings"},
 	}
 
 	status, err := libts.Status(ctx)
@@ -223,6 +225,28 @@ func (m *model) updateFromState(state libts.State) {
 			m.exitNodes.Submenu.SetItems(exitNodeItems)
 		}
 
+		// Update the network devices submenu.
+		{
+			networkNodes := make([]ui.SubmenuItem, len(m.state.Peers))
+
+			i := 0
+			for _, networkNode := range m.state.Peers {
+				// Offset for the "None" item and the divider.
+				networkNodes[i] = &ui.LabeledSubmenuItem{
+					Label: fmt.Sprintf("%s - closest region %s", networkNode.HostName, networkNode.Relay),
+					OnActivate: func() tea.Msg {
+						clipboard.Write(clipboard.FmtText, []byte(networkNode.TailscaleIPs[0].String()))
+						return successMsg("Copied IP address")
+					},
+					IsDim: !networkNode.Online,
+				}
+
+				i++
+			}
+
+			m.networkDevices.Submenu.SetItems(networkNodes)
+		}
+
 		// Update the settings submenu.
 		{
 			exitNode := "No"
@@ -360,6 +384,7 @@ func (m *model) updateFromState(state libts.State) {
 		m.menu.SetItems([]*ui.AppmenuItem{
 			m.deviceInfo,
 			m.exitNodes,
+			m.networkDevices,
 			m.settings,
 		})
 	} else {

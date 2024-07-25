@@ -1,6 +1,7 @@
 package libts
 
 import (
+	"math"
 	"slices"
 	"strings"
 
@@ -35,6 +36,8 @@ type State struct {
 	// True if the node is locked out by tailnet lock.
 	IsLockedOut bool
 
+	// State of each peer, keyed by each peer's current public key.
+	Peers []*ipnstate.PeerStatus
 	// List of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
 	SortedExitNodes []*ipnstate.PeerStatus
 	// ID of the currently selected exit node or nil if none is selected.
@@ -64,6 +67,42 @@ func getSortedExitNodes(tsStatus *ipnstate.Status) []*ipnstate.PeerStatus {
 	return exitNodes
 }
 
+// Get a sorted network node list, sorted by the amount of traffic we're doing to that node
+func getSortedNetworkNodes(tsStatus *ipnstate.Status) []*ipnstate.PeerStatus {
+	networkNodes := make([]*ipnstate.PeerStatus, 0)
+
+	if tsStatus == nil {
+		return networkNodes
+	}
+
+	for _, peer := range tsStatus.Peer {
+		networkNodes = append(networkNodes, peer)
+	}
+
+	slices.SortFunc(networkNodes, func(a, b *ipnstate.PeerStatus) int {
+		trafficDiff := int((a.RxBytes + a.TxBytes) - (b.RxBytes + b.TxBytes))
+
+		// if there is a noticeable traffic difference, prefer the more trafficked node
+		if math.Abs(float64(trafficDiff)) > 500000 { // 500KB
+			return trafficDiff
+		}
+
+		// if one of the nodes is online and the other is offline, prefer the one that is online
+		if a.Online && !b.Online {
+			return -1
+		}
+
+		if !a.Online && b.Online {
+			return 1
+		}
+
+		// otherwise, sort alphabetically
+		return strings.Compare(PeerName(a), PeerName(b))
+	})
+
+	return networkNodes
+}
+
 // Make a State from an ipnstate.Status. Safely returns an empty state value if the status is nil.
 func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.NetworkLockStatus) State {
 	if status == nil {
@@ -80,6 +119,7 @@ func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.Network
 		TSVersion:       status.Version,
 		Self:            status.Self,
 		SortedExitNodes: getSortedExitNodes(status),
+		Peers:           getSortedNetworkNodes(status),
 	}
 
 	versionSplitIndex := strings.IndexByte(state.TSVersion, '-')
