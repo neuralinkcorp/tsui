@@ -93,14 +93,18 @@ func initialModel() (model, error) {
 		return m, err
 	}
 
-	state := libts.MakeState(status, prefs, lock)
+	state, err := libts.MakeState(status, prefs, lock)
+	if err != nil {
+		return m, err
+	}
+
 	m.updateFromState(state)
 
 	return m, nil
 }
 
-func (m *model) updateFromState(state libts.State) {
-	m.state = state
+func (m *model) updateFromState(state *libts.State) {
+	m.state = *state
 
 	if m.state.BackendState == ipn.Running.String() {
 		// Update the device info submenu.
@@ -202,6 +206,11 @@ func (m *model) updateFromState(state libts.State) {
 				i := index + 2
 
 				label := libts.PeerName(exitNode)
+
+				if latency := m.state.ExitNodeLatencies[exitNode]; latency != nil {
+					label += fmt.Sprintf(" (latency %vms)", latency)
+				}
+
 				if !exitNode.Online {
 					label += " (offline)"
 				}

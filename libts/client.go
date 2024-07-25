@@ -64,7 +64,10 @@ func SetExitNode(ctx context.Context, peer *ipnstate.PeerStatus) error {
 			return err
 		}
 
-		prefs.SetExitNodeIP(peer.TailscaleIPs[0].String(), status)
+		err = prefs.SetExitNodeIP(peer.TailscaleIPs[0].String(), status)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err := ts.EditPrefs(ctx, &ipn.MaskedPrefs{

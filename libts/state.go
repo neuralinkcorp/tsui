@@ -68,15 +68,20 @@ func getSortedExitNodes(tsStatus *ipnstate.Status) []*ipnstate.PeerStatus {
 }
 
 // Make a State from an ipnstate.Status. Safely returns an empty state value if the status is nil.
-func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.NetworkLockStatus) State {
+func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.NetworkLockStatus) (*State, error) {
 	if status == nil {
-		return State{
+		return &State{
 			Prefs:        prefs,
 			BackendState: ipn.NoState.String(),
-		}
+		}, nil
 	}
 
 	sortedExitNodes := getSortedExitNodes(status)
+	exitNodeLatencies, err := realtime.GetExitNodeRtt(sortedExitNodes)
+
+	if err != nil {
+		return nil, err
+	}
 
 	state := State{
 		Prefs:             prefs,
@@ -85,7 +90,7 @@ func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.Network
 		TSVersion:         status.Version,
 		Self:              status.Self,
 		SortedExitNodes:   sortedExitNodes,
-		ExitNodeLatencies: realtime.GetExitNodeRtt(sortedExitNodes),
+		ExitNodeLatencies: exitNodeLatencies,
 	}
 
 	versionSplitIndex := strings.IndexByte(state.TSVersion, '-')
@@ -117,5 +122,5 @@ func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.Network
 		}
 	}
 
-	return state
+	return &state, nil
 }

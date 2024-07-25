@@ -8,24 +8,28 @@ import (
 )
 
 // A nullable latency type
-type Latency int64
+type Latency *int64
 
-func GetExitNodeRtt(nodes []*ipnstate.PeerStatus) map[*ipnstate.PeerStatus]Latency {
+func GetExitNodeRtt(nodes []*ipnstate.PeerStatus) (map[*ipnstate.PeerStatus]Latency, error) {
 	latency := make(map[*ipnstate.PeerStatus]Latency)
 
 	if pinger, err := ping.New("0.0.0.0", ""); err == nil {
 		for _, node := range nodes {
-			ip, err := net.ResolveIPAddr("ip4", "1.1.1.1")
+			// the first address is the ipv4 one
+			ip, err := net.ResolveIPAddr("ip4", node.TailscaleIPs[0].String())
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
-			rtt, err := pinger.PingAttempts(ip, time.Second, 1)
-			if err != nil {
-				panic(err)
-			}
-			latency[node] = Latency(rtt.Milliseconds())
+
+			// for obvious reasons, ping is highly fallible
+			// fail silently
+			rtt, _ := pinger.Ping(ip, 500*time.Millisecond)
+
+			ms := rtt.Milliseconds()
+
+			latency[node] = &ms
 		}
 	}
 
-	return latency
+	return latency, nil
 }

@@ -19,7 +19,7 @@ func makeTick(interval time.Duration) tea.Cmd {
 }
 
 // Message representing a Tailscale state update and any error that occurred (optional).
-type stateMsg libts.State
+type stateMsg *libts.State
 
 // Message representing some transient error.
 type errorMsg error
@@ -50,7 +50,11 @@ func updateState() tea.Msg {
 		return errorMsg(err)
 	}
 
-	state := libts.MakeState(status, prefs, lock)
+	state, err := libts.MakeState(status, prefs, lock)
+	if err != nil {
+		return errorMsg(err)
+	}
+
 	return stateMsg(state)
 }
 
@@ -75,7 +79,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// When the state updater returns, update our model.
 	case stateMsg:
-		m.updateFromState(libts.State(msg))
+		m.updateFromState(msg)
 
 	// Display errors.
 	case errorMsg:
