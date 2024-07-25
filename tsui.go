@@ -194,9 +194,12 @@ func (m *model) updateFromState(state libts.State) {
 				IsActive: m.state.CurrentExitNode == nil,
 			}
 			exitNodeItems[1] = &ui.DividerSubmenuItem{}
-			for i, exitNode := range m.state.SortedExitNodes {
+
+			index := 0
+
+			for _, exitNode := range m.state.SortedExitNodes {
 				// Offset for the "None" item and the divider.
-				i += 2
+				i := index + 2
 
 				label := libts.PeerName(exitNode)
 				if !exitNode.Online {
@@ -217,6 +220,8 @@ func (m *model) updateFromState(state libts.State) {
 					},
 					IsActive: m.state.CurrentExitNode != nil && exitNode.ID == *m.state.CurrentExitNode,
 				}
+
+				index++
 			}
 
 			m.exitNodes.RightLabel = m.state.CurrentExitNodeName

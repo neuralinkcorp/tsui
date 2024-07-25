@@ -1,6 +1,7 @@
 package libts
 
 import (
+	"github.com/neuralink/tsui/realtime"
 	"slices"
 	"strings"
 
@@ -37,6 +38,8 @@ type State struct {
 
 	// List of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
 	SortedExitNodes []*ipnstate.PeerStatus
+	// Latency to exit node peers
+	ExitNodeLatencies map[*ipnstate.PeerStatus]realtime.Latency
 	// ID of the currently selected exit node or nil if none is selected.
 	CurrentExitNode *tailcfg.StableNodeID
 	// Name of the currently selected exit node or an empty string if none is selected.
@@ -73,13 +76,16 @@ func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.Network
 		}
 	}
 
+	sortedExitNodes := getSortedExitNodes(status)
+
 	state := State{
-		Prefs:           prefs,
-		AuthURL:         status.AuthURL,
-		BackendState:    status.BackendState,
-		TSVersion:       status.Version,
-		Self:            status.Self,
-		SortedExitNodes: getSortedExitNodes(status),
+		Prefs:             prefs,
+		AuthURL:           status.AuthURL,
+		BackendState:      status.BackendState,
+		TSVersion:         status.Version,
+		Self:              status.Self,
+		SortedExitNodes:   sortedExitNodes,
+		ExitNodeLatencies: realtime.GetExitNodeRtt(sortedExitNodes),
 	}
 
 	versionSplitIndex := strings.IndexByte(state.TSVersion, '-')

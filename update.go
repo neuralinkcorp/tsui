@@ -66,7 +66,7 @@ func editPrefs(maskedPrefs *ipn.MaskedPrefs) tea.Msg {
 // Bubbletea update function.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Create our ticker command which will be our "default return" in the absence of any other commands.
-	tick := makeTick(5 * tickInterval)
+	tick := makeTick(tickInterval)
 
 	switch msg := msg.(type) {
 	// On tick, fetch a new state.

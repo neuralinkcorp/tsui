@@ -191,7 +191,7 @@ func (m model) View() string {
 			Height(middleHeight).
 			Render(m.menu.Render())
 	} else {
-		text := "The Tailscale daemon isn't started.\n\nPress . to bring Tailscale up."
+		text := "The Tailscale daemon isn't active.\n\nPress . to bring Tailscale up."
 
 		divider := lipgloss.NewStyle().
 			Faint(true).
