@@ -79,6 +79,21 @@ func renderLockedOutWarning(m *model) string {
 	return lipgloss.PlaceHorizontal(m.terminalWidth, lipgloss.Center, lockedOutWarning)
 }
 
+// Render the locked out warning. Returns static output; should be called conditionally.
+func renderWarnings(m *model) string {
+	bodyText := "Warning: "
+
+	for i, issue := range m.state.Health {
+		bodyText += issue
+
+		if i != len(m.state.Health)-1 {
+			bodyText += ", "
+		}
+	}
+
+	return bodyText
+}
+
 // Format the top header section.
 func renderHeader(m *model) string {
 	logo := lipgloss.NewStyle().
@@ -111,6 +126,12 @@ func renderHeader(m *model) string {
 		status += lipgloss.NewStyle().
 			Faint(true).
 			Render("--")
+	}
+
+	status += "\n"
+
+	if len(m.state.Health) != 0 {
+		status += renderWarnings(m) + "\n\n"
 	}
 
 	// App versions.

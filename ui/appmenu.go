@@ -45,6 +45,7 @@ func (i *AppmenuItem) render(isSelected bool, isAnySubmenuOpen bool) string {
 	arrow := style.
 		Padding(0, 1).
 		Render(">")
+
 	return left + right + arrow
 }
 
