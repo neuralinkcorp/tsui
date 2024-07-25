@@ -92,13 +92,13 @@ func renderHeader(m *model) string {
 		status += lipgloss.NewStyle().
 			Faint(true).
 			PaddingLeft(1).
-			Render("(press . to stop)")
+			Render("(press . to disconnect)")
 	}
 	status += "\n"
 
 	// Extra info; either auth URL or user login name, depending on the backend state.
 	if m.state.AuthURL != "" {
-		status += "Auth URL:       "
+		status += "Auth URL:         "
 		status += lipgloss.NewStyle().
 			Underline(true).
 			Foreground(ui.Blue).
@@ -153,6 +153,14 @@ func renderStatus(m *model) string {
 
 	case statusTypeSuccess:
 		color = ui.Green
+
+	case statusTypeTip:
+		color = ui.Blue
+
+		statusPrefix = lipgloss.NewStyle().
+			Foreground(color).
+			Bold(true).
+			Render("Tip! ")
 	}
 
 	statusText := lipgloss.NewStyle().
@@ -191,7 +199,7 @@ func (m model) View() string {
 			Height(middleHeight).
 			Render(m.menu.Render())
 	} else {
-		text := "The Tailscale daemon isn't started.\n\nPress . to bring Tailscale up."
+		text := "The Tailscale daemon isn't running.\n\nPress . to bring Tailscale up."
 
 		divider := lipgloss.NewStyle().
 			Faint(true).

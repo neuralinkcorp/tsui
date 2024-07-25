@@ -24,10 +24,11 @@ var Version = "local"
 const (
 	// Default rate at which to poll Tailscale for status updates.
 	tickInterval = 2 * time.Second
-	// How long to keep error messages in the bottom bar.
-	errorLifetime = 5 * time.Second
-	// How long to keep success messages in the bottom bar.
+
+	// How long to keep messages in the bottom bar.
+	errorLifetime   = 5 * time.Second
 	successLifetime = 2 * time.Second
+	tipLifetime     = 3 * time.Second
 )
 
 // The type of the bottom bar status message:
@@ -38,6 +39,7 @@ type statusType int
 const (
 	statusTypeError statusType = iota
 	statusTypeSuccess
+	statusTypeTip
 )
 
 var ctx = context.Background()
@@ -138,7 +140,7 @@ func (m *model) updateFromState(state libts.State) {
 
 			submenuItems = append(submenuItems,
 				&ui.SpacerSubmenuItem{},
-				&ui.TitleSubmenuItem{Label: "Dev Info"},
+				&ui.TitleSubmenuItem{Label: "Debug Info"},
 				&ui.LabeledSubmenuItem{
 					Label: string(state.Self.ID),
 					OnActivate: func() tea.Msg {
@@ -173,6 +175,21 @@ func (m *model) updateFromState(state libts.State) {
 					},
 				)
 			}
+
+			submenuItems = append(submenuItems,
+				&ui.SpacerSubmenuItem{},
+				&ui.LabeledSubmenuItem{
+					Label:   "[Disconnect from Tailscale]",
+					Variant: ui.SubmenuItemVariantDanger,
+					OnActivate: func() tea.Msg {
+						err := libts.Down(ctx)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return tipMsg("You can also simply press . to disconnect.")
+					},
+				},
+			)
 
 			m.deviceInfo.Submenu.SetItems(submenuItems)
 		}

@@ -27,6 +27,9 @@ type errorMsg error
 // A success message to temporarily display.
 type successMsg string
 
+// A notice to temporarily display.
+type tipMsg string
+
 // Message to clear a status because its visiblity time elapsed.
 // Stores an int corresponding to the statusGen, and this message should be
 // ignored if the current statusGen is later.
@@ -99,6 +102,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusGen++
 		return m, func() tea.Msg {
 			time.Sleep(successLifetime)
+			return statusExpiredMsg(m.statusGen)
+		}
+
+	// And tips.
+	case tipMsg:
+		m.statusType = statusTypeTip
+		m.statusText = string(msg)
+		m.statusGen++
+		return m, func() tea.Msg {
+			time.Sleep(tipLifetime)
 			return statusExpiredMsg(m.statusGen)
 		}
 

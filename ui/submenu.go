@@ -23,10 +23,22 @@ type SubmenuItem interface {
 
 const submenuItemWidth = 45
 
+// Visual variant of a submenu item:
+//
+//	SubmenuItemVariantDefault, SubmenuItemVariantDanger
+type SubmenuItemVariant int
+
+const (
+	SubmenuItemVariantDefault SubmenuItemVariant = iota
+	SubmenuItemVariantDanger
+)
+
 // A menu item with a label.
 type LabeledSubmenuItem struct {
 	// The text to be displayed for this menu item.
 	Label string
+	// Visual variant.
+	Variant SubmenuItemVariant
 	// Callback when the item is activated.
 	OnActivate tea.Cmd
 	// Whether this item is visibly de-emphasized.
@@ -59,6 +71,9 @@ func (item *LabeledSubmenuItem) render(isSelected bool, isSubmenuOpen bool) stri
 		} else if item.IsDim {
 			style = style.
 				Faint(true)
+		} else if item.Variant == SubmenuItemVariantDanger {
+			style = style.
+				Foreground(Red)
 		}
 	} else {
 		style = style.
@@ -106,6 +121,9 @@ func (item *ToggleableSubmenuItem) render(isSelected bool, isSubmenuOpen bool) s
 		} else if item.IsDim {
 			style = style.
 				Faint(true)
+		} else if item.Variant == SubmenuItemVariantDanger && !item.IsActive {
+			style = style.
+				Foreground(Red)
 		}
 	} else {
 		style = style.
