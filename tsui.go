@@ -142,11 +142,11 @@ func (m *model) updateFromState(state *libts.State) {
 
 			submenuItems = append(submenuItems,
 				&ui.SpacerSubmenuItem{},
-				&ui.TitleSubmenuItem{Label: "Dev Info"},
+				&ui.TitleSubmenuItem{Label: "Node ID & Key"},
 				&ui.LabeledSubmenuItem{
 					Label: string(state.Self.ID),
 					OnActivate: func() tea.Msg {
-						clipboard.Write(clipboard.FmtText, []byte(string(state.Self.ID)))
+						clipboard.Write(clipboard.FmtText, []byte(state.Self.ID))
 						return successMsg("Copied Tailscale ID to clipboard.")
 					},
 				},
@@ -167,7 +167,7 @@ func (m *model) updateFromState(state *libts.State) {
 
 				submenuItems = append(submenuItems,
 					&ui.SpacerSubmenuItem{},
-					&ui.TitleSubmenuItem{Label: "Tailnet Lock: " + statusText},
+					&ui.TitleSubmenuItem{Label: "Tailnet Lock Key (Status: " + statusText + ")"},
 					&ui.LabeledSubmenuItem{
 						Label: state.LockKey.CLIString(),
 						OnActivate: func() tea.Msg {

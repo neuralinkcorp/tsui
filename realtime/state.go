@@ -13,7 +13,7 @@ type Latency *int64
 
 var (
 	LastLatencyResult  = make(map[string]Latency)
-	LatencyTestLimiter = rate.NewLimiter(10, 1)
+	LatencyTestLimiter = rate.NewLimiter(2, 1)
 )
 
 func GetExitNodeRtt(nodes []*ipnstate.PeerStatus) (map[string]Latency, error) {
