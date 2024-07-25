@@ -30,8 +30,20 @@ type SubmenuItemVariant int
 
 const (
 	SubmenuItemVariantDefault SubmenuItemVariant = iota
+	SubmenuItemVariantAccent
 	SubmenuItemVariantDanger
 )
+
+func (v SubmenuItemVariant) color() lipgloss.Color {
+	switch v {
+	case SubmenuItemVariantAccent:
+		return Secondary
+	case SubmenuItemVariantDanger:
+		return Red
+	}
+
+	return lipgloss.Color("")
+}
 
 // A menu item with a label.
 type LabeledSubmenuItem struct {
@@ -71,9 +83,16 @@ func (item *LabeledSubmenuItem) render(isSelected bool, isSubmenuOpen bool) stri
 		} else if item.IsDim {
 			style = style.
 				Faint(true)
-		} else if item.Variant == SubmenuItemVariantDanger {
-			style = style.
-				Foreground(Red)
+		}
+
+		if item.Variant != SubmenuItemVariantDefault {
+			if isSelected {
+				style = style.
+					Bold(true)
+			} else if !item.IsDim {
+				style = style.
+					Foreground(item.Variant.color())
+			}
 		}
 	} else {
 		style = style.
@@ -110,8 +129,12 @@ func (item *ToggleableSubmenuItem) render(isSelected bool, isSubmenuOpen bool) s
 	if isSubmenuOpen {
 		if item.IsActive {
 			style = style.
-				Bold(true).
-				Foreground(Secondary)
+				Bold(true)
+
+			if item.Variant == SubmenuItemVariantDefault {
+				style = style.
+					Foreground(Secondary)
+			}
 		}
 
 		if isSelected {
@@ -121,9 +144,16 @@ func (item *ToggleableSubmenuItem) render(isSelected bool, isSubmenuOpen bool) s
 		} else if item.IsDim {
 			style = style.
 				Faint(true)
-		} else if item.Variant == SubmenuItemVariantDanger && !item.IsActive {
-			style = style.
-				Foreground(Red)
+		}
+
+		if item.Variant != SubmenuItemVariantDefault {
+			if isSelected {
+				style = style.
+					Bold(true)
+			} else if !item.IsDim {
+				style = style.
+					Foreground(item.Variant.color())
+			}
 		}
 	} else {
 		style = style.

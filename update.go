@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/neuralink/tsui/libts"
+	"github.com/pkg/browser"
 	"tailscale.com/ipn"
 )
 
@@ -69,7 +70,7 @@ func editPrefs(maskedPrefs *ipn.MaskedPrefs) tea.Msg {
 // Bubbletea update function.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Create our ticker command which will be our "default return" in the absence of any other commands.
-	tick := makeTick(5 * tickInterval)
+	tick := makeTick(tickInterval)
 
 	switch msg := msg.(type) {
 	// On tick, fetch a new state.
@@ -157,8 +158,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter", " ":
 			return m, m.menu.Activate()
 
+		// Global action hotkey.
 		case ".":
 			switch m.state.BackendState {
+			// If running, stop Tailscale.
 			case ipn.Running.String():
 				return m, func() tea.Msg {
 					err := libts.Down(ctx)
@@ -168,14 +171,50 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return updateState()
 				}
 
-			case ipn.NoState.String():
-			case ipn.Stopped.String():
+			// If stopped, start Tailscale.
+			case ipn.NoState.String(), ipn.Stopped.String():
 				return m, func() tea.Msg {
 					err := libts.Up(ctx)
 					if err != nil {
 						return errorMsg(err)
 					}
 					return updateState()
+				}
+
+			// If we need to login...
+			case ipn.NeedsLogin.String():
+				if m.state.AuthURL == "" {
+					// If we haven't started the login flow yet, do so.
+					// Tailscale will open their browser for us.
+					return m, func() tea.Msg {
+						err := libts.StartLoginInteractive(ctx)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return successMsg("Starting login flow. This may take a few seconds.")
+					}
+				} else {
+					// If the auth flow has already started, we need to open the browser ourselves.
+					return m, func() tea.Msg {
+						err := browser.OpenURL(m.state.AuthURL)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return tick()
+					}
+				}
+
+			case ipn.Starting.String():
+				// If we have an AuthURL in the Starting state, that means the user is reauthenticating
+				// and we also need to open the browser!
+				if m.state.AuthURL != "" {
+					return m, func() tea.Msg {
+						err := browser.OpenURL(m.state.AuthURL)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return tick()
+					}
 				}
 			}
 		}

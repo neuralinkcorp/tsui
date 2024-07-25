@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -97,20 +98,14 @@ func renderHeader(m *model) string {
 	status += "\n"
 
 	// Extra info; either auth URL or user login name, depending on the backend state.
-	if m.state.AuthURL != "" {
-		status += "Auth URL:         "
-		status += lipgloss.NewStyle().
-			Underline(true).
-			Foreground(ui.Blue).
-			Render(m.state.AuthURL)
-	} else if m.state.User != nil {
-		status += lipgloss.NewStyle().
-			Faint(true).
-			Render(m.state.User.LoginName)
-	} else {
+	if m.state.User == nil || m.state.User.LoginName == "" {
 		status += lipgloss.NewStyle().
 			Faint(true).
 			Render("--")
+	} else {
+		status += lipgloss.NewStyle().
+			Faint(true).
+			Render(m.state.User.LoginName)
 	}
 
 	// App versions.
@@ -131,6 +126,16 @@ func renderHeader(m *model) string {
 		Render(" ")
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, logo, status, spacer, versions)
+}
+
+// Render a banner/modal for the middle of the screen.
+func renderMiddleBanner(m *model, height int, text string) string {
+	divider := lipgloss.NewStyle().
+		Faint(true).
+		Render(strings.Repeat("=", lipgloss.Width(text)))
+
+	return lipgloss.Place(m.terminalWidth, height, lipgloss.Center, lipgloss.Center,
+		divider+"\n\n"+text+"\n\n"+divider)
 }
 
 // Render the bottom status text.
@@ -194,19 +199,68 @@ func (m model) View() string {
 	middleHeight := m.terminalHeight - lipgloss.Height(top) - lipgloss.Height(bottom)
 	var middle string
 
-	if m.state.BackendState == ipn.Running.String() {
+	styledAuthUrl := lipgloss.NewStyle().
+		Underline(true).
+		Foreground(ui.Blue).
+		Render(m.state.AuthURL)
+
+	switch m.state.BackendState {
+	case ipn.Running.String():
 		middle = lipgloss.NewStyle().
 			Height(middleHeight).
 			Render(m.menu.Render())
-	} else {
-		text := "The Tailscale daemon isn't running.\n\nPress . to bring Tailscale up."
 
-		divider := lipgloss.NewStyle().
-			Faint(true).
-			Render(strings.Repeat("=", lipgloss.Width(text)))
+	case ipn.NeedsMachineAuth.String():
+		// TODO: Figure out what this state actually is so we can be helpful to the user.
+		middle = renderMiddleBanner(&m, middleHeight, "Tailscale status is NeedsMachineAuth.")
 
-		middle = lipgloss.Place(m.terminalWidth, middleHeight, lipgloss.Center, lipgloss.Center,
-			divider+"\n\n"+text+"\n\n"+divider)
+	case ipn.NeedsLogin.String():
+		lines := []string{
+			lipgloss.NewStyle().
+				Bold(true).
+				Render(`Login Required`),
+			``,
+			`You need to login to Tailscale before you can connect to the tailnet.`,
+			``,
+		}
+
+		if m.state.AuthURL == "" {
+			lines = append(lines,
+				`Press . to authenticate.`,
+			)
+		} else {
+			lines = append(lines,
+				fmt.Sprintf(`Login URL: %s`, styledAuthUrl),
+				``,
+				`Press . to open in browser.`,
+			)
+		}
+
+		middle = renderMiddleBanner(&m, middleHeight, strings.Join(lines, "\n"))
+
+	case ipn.NoState.String(), ipn.Stopped.String():
+		middle = renderMiddleBanner(&m, middleHeight, strings.Join([]string{
+			`The Tailscale daemon isn't running.`,
+			``,
+			`Press . to bring Tailscale up.`,
+		}, "\n"))
+
+	case ipn.Starting.String():
+		if m.state.AuthURL == "" {
+			middle = renderMiddleBanner(&m, middleHeight,
+				`Tailscale is starting...`)
+		} else {
+			// If we have an AuthURL in the Starting state, that means the user is reauthenticating!
+			middle = renderMiddleBanner(&m, middleHeight, strings.Join([]string{
+				lipgloss.NewStyle().
+					Bold(true).
+					Render(`Reauthenticate with Tailscale`),
+				``,
+				fmt.Sprintf(`Login URL: %s`, styledAuthUrl),
+				``,
+				`Press . to open in browser.`,
+			}, "\n"))
+		}
 	}
 
 	return top + "\n" + middle + "\n" + bottom

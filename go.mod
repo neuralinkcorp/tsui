@@ -5,6 +5,7 @@ go 1.22.5
 require (
 	github.com/charmbracelet/bubbletea v0.26.6
 	github.com/charmbracelet/lipgloss v0.12.1
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	golang.design/x/clipboard v0.7.0
 	tailscale.com v1.70.0
 )

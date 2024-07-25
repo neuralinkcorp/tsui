@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/neuralink/tsui/libts"
 	"github.com/neuralink/tsui/ui"
+	"github.com/pkg/browser"
 	"golang.design/x/clipboard"
 	"tailscale.com/ipn"
 	"tailscale.com/types/opt"
@@ -23,11 +25,11 @@ var Version = "local"
 
 const (
 	// Default rate at which to poll Tailscale for status updates.
-	tickInterval = 2 * time.Second
+	tickInterval = 5 * time.Second
 
 	// How long to keep messages in the bottom bar.
-	errorLifetime   = 5 * time.Second
-	successLifetime = 2 * time.Second
+	errorLifetime   = 6 * time.Second
+	successLifetime = 3 * time.Second
 	tipLifetime     = 3 * time.Second
 )
 
@@ -180,7 +182,7 @@ func (m *model) updateFromState(state libts.State) {
 				&ui.SpacerSubmenuItem{},
 				&ui.LabeledSubmenuItem{
 					Label:   "[Disconnect from Tailscale]",
-					Variant: ui.SubmenuItemVariantDanger,
+					Variant: ui.SubmenuItemVariantAccent,
 					OnActivate: func() tea.Msg {
 						err := libts.Down(ctx)
 						if err != nil {
@@ -247,6 +249,15 @@ func (m *model) updateFromState(state libts.State) {
 				exitNode = "Exit Node"
 			}
 
+			accountTitle := "Account"
+			reauthenticateButtonLabel := "[Reauthenticate]"
+			if m.state.Self.KeyExpiry != nil {
+				reauthenticateButtonLabel = "[Reauthenticate Now]"
+
+				duration := time.Until(*m.state.Self.KeyExpiry)
+				accountTitle += " - Key Expires in " + ui.FormatDuration(duration)
+			}
+
 			submenuItems := []ui.SubmenuItem{
 				&ui.TitleSubmenuItem{Label: "General"},
 
@@ -289,7 +300,7 @@ func (m *model) updateFromState(state libts.State) {
 				&ui.SpacerSubmenuItem{},
 				&ui.TitleSubmenuItem{Label: "Exit Nodes"},
 
-				ui.NewYesNoSettingsSubmenuItem("Allow Local Network Access",
+				ui.NewYesNoSettingsSubmenuItem("Enable Local Network Access",
 					m.state.Prefs.ExitNodeAllowLANAccess,
 					func(newValue bool) tea.Msg {
 						return editPrefs(&ipn.MaskedPrefs{
@@ -313,6 +324,33 @@ func (m *model) updateFromState(state libts.State) {
 						})
 					},
 				),
+
+				&ui.SpacerSubmenuItem{},
+				&ui.TitleSubmenuItem{Label: accountTitle},
+
+				&ui.LabeledSubmenuItem{
+					Label: reauthenticateButtonLabel,
+					OnActivate: func() tea.Msg {
+						// Reauthenticating is basically the same as the first-time login flow.
+						err := libts.StartLoginInteractive(ctx)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return successMsg("Starting reauthentication. This may take a few seconds.")
+					},
+				},
+
+				&ui.LabeledSubmenuItem{
+					Label:   "[Log Out]",
+					Variant: ui.SubmenuItemVariantDanger,
+					OnActivate: func() tea.Msg {
+						err := libts.Logout(ctx)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return successMsg("Logged out.")
+					},
+				},
 			}
 
 			// On Linux, show the advanced Linux settings.
@@ -398,12 +436,19 @@ func renderMainError(err error) string {
 }
 
 func main() {
+	// We don't want the browser opening commands to print any output outside of the
+	// context of our UI rendering, which would break the UI.
+	browser.Stdout = io.Discard
+	browser.Stderr = io.Discard
+
 	m, err := initialModel()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, renderMainError(err))
 		os.Exit(1)
 	}
 
+	// Enable "alternate screen" mode, a terminal convention designed for rendering
+	// full-screen, interactive UIs.
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, renderMainError(err))
