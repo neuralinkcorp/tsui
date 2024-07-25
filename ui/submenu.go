@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"slices"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -116,6 +118,111 @@ func (item *ToggleableSubmenuItem) render(isSelected bool, isSubmenuOpen bool) s
 	}
 
 	return style.Render(labelPrefix + item.Label)
+}
+
+// A submenu item for a "settings control" that can have multiple values and activated to switch between them.
+type SettingSubmenuItem struct {
+	// Name of this setting.
+	Label string
+	// Callback when a new value is selected.
+	OnChange func(newLabel string) tea.Msg
+	// The value options.
+	options []string
+	// The currently selected value.
+	selected int
+}
+
+// Create a new SettingsSubmenuItem. initialOption must be one of the options.
+func NewSettingsSubmenuItem(label string, options []string, initialOption string, onChange func(newLabel string) tea.Msg) *SettingSubmenuItem {
+	return &SettingSubmenuItem{
+		Label:    label,
+		options:  options,
+		selected: slices.Index(options, initialOption),
+		OnChange: onChange,
+	}
+}
+
+// Create a new SettingsSubmenuItem that is just a yes/no toggle.
+func NewYesNoSettingsSubmenuItem(label string, initialValue bool, onChange func(newValue bool) tea.Msg) *SettingSubmenuItem {
+	var initialValueString string
+	if initialValue {
+		initialValueString = "Yes"
+	} else {
+		initialValueString = "No"
+	}
+
+	onStringChange := func(newLabel string) tea.Msg {
+		if newLabel == "Yes" {
+			return onChange(true)
+		} else {
+			return onChange(false)
+		}
+	}
+
+	return NewSettingsSubmenuItem(label, []string{"Yes", "No"}, initialValueString, onStringChange)
+}
+
+func (item *SettingSubmenuItem) isSelectable() bool {
+	return true
+}
+
+func (item *SettingSubmenuItem) onActivate() tea.Cmd {
+	item.selected++
+	if item.selected >= len(item.options) {
+		item.selected = 0
+	}
+	newLabel := item.options[item.selected]
+	return func() tea.Msg {
+		return item.OnChange(newLabel)
+	}
+}
+
+func (item *SettingSubmenuItem) clearActiveFlag() {}
+
+func (item *SettingSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
+	selectedLabel := item.options[item.selected]
+
+	// Label with right-side padding to align the value label to the right.
+	expandedLabel := lipgloss.NewStyle().
+		Width(submenuItemWidth - lipgloss.Width(selectedLabel) - 3). // 3 for the padding
+		Render(item.Label)
+
+	style := lipgloss.NewStyle().
+		PaddingRight(1).
+		PaddingLeft(2).
+		Width(submenuItemWidth)
+	selectedLabelStyle := lipgloss.NewStyle()
+
+	if isSubmenuOpen {
+		if isSelected {
+			style = style.
+				Background(Secondary).
+				Foreground(Black)
+
+			selectedLabelStyle = selectedLabelStyle.
+				Bold(true)
+		} else {
+			var color lipgloss.Color
+
+			// This is kinda janky but hey, why not style the value by its contents?
+			switch selectedLabel {
+			case "Yes", "On":
+				color = Green
+			case "No", "Off":
+				color = Red
+			default:
+				color = Blue
+			}
+
+			selectedLabelStyle = selectedLabelStyle.
+				Foreground(color)
+		}
+	} else {
+		style = style.
+			Faint(true)
+	}
+
+	return style.Render(expandedLabel + selectedLabelStyle.Render(selectedLabel))
 }
 
 // A divider in a menu.

@@ -40,13 +40,27 @@ func updateState() tea.Msg {
 		return errorMsg(err)
 	}
 
+	prefs, err := libts.Prefs(ctx)
+	if err != nil {
+		return errorMsg(err)
+	}
+
 	lock, err := libts.LockStatus(ctx)
 	if err != nil {
 		return errorMsg(err)
 	}
 
-	state := libts.MakeState(status, lock)
+	state := libts.MakeState(status, prefs, lock)
 	return stateMsg(state)
+}
+
+// Command that updates the Tailscale preferences and triggers a state update.
+func editPrefs(maskedPrefs *ipn.MaskedPrefs) tea.Msg {
+	err := libts.EditPrefs(ctx, maskedPrefs)
+	if err != nil {
+		return errorMsg(err)
+	}
+	return updateState()
 }
 
 // Bubbletea update function.

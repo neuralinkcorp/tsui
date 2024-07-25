@@ -12,6 +12,9 @@ import (
 
 // Opinionated, sanitized subset of Tailscale state.
 type State struct {
+	// Tailscale preferences.
+	Prefs *ipn.Prefs
+
 	// Current Tailscale backend state.
 	//  "NoState", "NeedsLogin", "NeedsMachineAuth", "Stopped",
 	//  "Starting", "Running".
@@ -62,19 +65,21 @@ func getSortedExitNodes(tsStatus *ipnstate.Status) []*ipnstate.PeerStatus {
 }
 
 // Make a State from an ipnstate.Status. Safely returns an empty state value if the status is nil.
-func MakeState(tsStatus *ipnstate.Status, lock *ipnstate.NetworkLockStatus) State {
-	if tsStatus == nil {
+func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.NetworkLockStatus) State {
+	if status == nil {
 		return State{
+			Prefs:        prefs,
 			BackendState: ipn.NoState.String(),
 		}
 	}
 
 	state := State{
-		AuthURL:         tsStatus.AuthURL,
-		BackendState:    tsStatus.BackendState,
-		TSVersion:       tsStatus.Version,
-		Self:            tsStatus.Self,
-		SortedExitNodes: getSortedExitNodes(tsStatus),
+		Prefs:           prefs,
+		AuthURL:         status.AuthURL,
+		BackendState:    status.BackendState,
+		TSVersion:       status.Version,
+		Self:            status.Self,
+		SortedExitNodes: getSortedExitNodes(status),
 	}
 
 	versionSplitIndex := strings.IndexByte(state.TSVersion, '-')
@@ -82,8 +87,8 @@ func MakeState(tsStatus *ipnstate.Status, lock *ipnstate.NetworkLockStatus) Stat
 		state.TSVersion = state.TSVersion[:versionSplitIndex]
 	}
 
-	if tsStatus.Self != nil {
-		user := tsStatus.User[tsStatus.Self.UserID]
+	if status.Self != nil {
+		user := status.User[status.Self.UserID]
 		state.User = &user
 	}
 
@@ -95,11 +100,11 @@ func MakeState(tsStatus *ipnstate.Status, lock *ipnstate.NetworkLockStatus) Stat
 		}
 	}
 
-	if tsStatus.ExitNodeStatus != nil {
-		state.CurrentExitNode = &tsStatus.ExitNodeStatus.ID
+	if status.ExitNodeStatus != nil {
+		state.CurrentExitNode = &status.ExitNodeStatus.ID
 
 		for _, peer := range state.SortedExitNodes {
-			if peer.ID == tsStatus.ExitNodeStatus.ID {
+			if peer.ID == status.ExitNodeStatus.ID {
 				state.CurrentExitNodeName = PeerName(peer)
 				break
 			}

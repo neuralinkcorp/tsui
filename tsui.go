@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,6 +13,8 @@ import (
 	"github.com/neuralink/tsui/ui"
 	"golang.design/x/clipboard"
 	"tailscale.com/ipn"
+	"tailscale.com/types/opt"
+	"tailscale.com/types/preftype"
 )
 
 // Injected at build time by the flake.nix.
@@ -48,6 +51,7 @@ type model struct {
 	menu       ui.Appmenu
 	deviceInfo *ui.AppmenuItem
 	exitNodes  *ui.AppmenuItem
+	settings   *ui.AppmenuItem
 
 	// Current width of the terminal.
 	terminalWidth int
@@ -67,14 +71,19 @@ type model struct {
 func initialModel() (model, error) {
 	m := model{
 		// Main menu items.
-		deviceInfo: &ui.AppmenuItem{LeftLabel: "Device Info"},
-		exitNodes: &ui.AppmenuItem{
-			LeftLabel: "Exit Nodes",
-			Submenu:   ui.Submenu{Exclusivity: ui.SubmenuExclusivityOne},
+		deviceInfo: &ui.AppmenuItem{LeftLabel: "This Device"},
+		exitNodes: &ui.AppmenuItem{LeftLabel: "Exit Nodes",
+			Submenu: ui.Submenu{Exclusivity: ui.SubmenuExclusivityOne},
 		},
+		settings: &ui.AppmenuItem{LeftLabel: "Settings"},
 	}
 
 	status, err := libts.Status(ctx)
+	if err != nil {
+		return m, err
+	}
+
+	prefs, err := libts.Prefs(ctx)
 	if err != nil {
 		return m, err
 	}
@@ -84,7 +93,7 @@ func initialModel() (model, error) {
 		return m, err
 	}
 
-	state := libts.MakeState(status, lock)
+	state := libts.MakeState(status, prefs, lock)
 	m.updateFromState(state)
 
 	return m, nil
@@ -214,10 +223,144 @@ func (m *model) updateFromState(state libts.State) {
 			m.exitNodes.Submenu.SetItems(exitNodeItems)
 		}
 
+		// Update the settings submenu.
+		{
+			exitNode := "No"
+			if m.state.Prefs.AdvertisesExitNode() {
+				exitNode = "Exit Node"
+			}
+
+			submenuItems := []ui.SubmenuItem{
+				&ui.TitleSubmenuItem{Label: "General"},
+
+				ui.NewYesNoSettingsSubmenuItem("Allow Incoming Connections",
+					!m.state.Prefs.ShieldsUp,
+					func(newValue bool) tea.Msg {
+						return editPrefs(&ipn.MaskedPrefs{
+							Prefs: ipn.Prefs{
+								ShieldsUp: !newValue,
+							},
+							ShieldsUpSet: true,
+						})
+					},
+				),
+
+				ui.NewYesNoSettingsSubmenuItem("Use Subnet Routes",
+					m.state.Prefs.RouteAll,
+					func(newValue bool) tea.Msg {
+						return editPrefs(&ipn.MaskedPrefs{
+							Prefs: ipn.Prefs{
+								RouteAll: newValue,
+							},
+							RouteAllSet: true,
+						})
+					},
+				),
+
+				ui.NewYesNoSettingsSubmenuItem("Use DNS Settings",
+					m.state.Prefs.CorpDNS,
+					func(newValue bool) tea.Msg {
+						return editPrefs(&ipn.MaskedPrefs{
+							Prefs: ipn.Prefs{
+								CorpDNS: newValue,
+							},
+							CorpDNSSet: true,
+						})
+					},
+				),
+
+				&ui.SpacerSubmenuItem{},
+				&ui.TitleSubmenuItem{Label: "Exit Nodes"},
+
+				ui.NewYesNoSettingsSubmenuItem("Allow Local Network Access",
+					m.state.Prefs.ExitNodeAllowLANAccess,
+					func(newValue bool) tea.Msg {
+						return editPrefs(&ipn.MaskedPrefs{
+							Prefs: ipn.Prefs{
+								ExitNodeAllowLANAccess: newValue,
+							},
+							ExitNodeAllowLANAccessSet: true,
+						})
+					},
+				),
+
+				ui.NewSettingsSubmenuItem("Advertise Exit Node",
+					[]string{"Exit Node", "No"},
+					exitNode,
+					func(newLabel string) tea.Msg {
+						var prefs ipn.Prefs
+						prefs.SetAdvertiseExitNode(newLabel == "Exit Node")
+						return editPrefs(&ipn.MaskedPrefs{
+							Prefs:              prefs,
+							AdvertiseRoutesSet: true,
+						})
+					},
+				),
+			}
+
+			// On Linux, show the advanced Linux settings.
+			if runtime.GOOS == "linux" {
+				var netfilterMode string
+				switch m.state.Prefs.NetfilterMode {
+				case preftype.NetfilterOn:
+					netfilterMode = "On"
+				case preftype.NetfilterNoDivert:
+					netfilterMode = "No Divert"
+				case preftype.NetfilterOff:
+					netfilterMode = "Off"
+				}
+
+				noStatefulFiltering, _ := m.state.Prefs.NoStatefulFiltering.Get()
+
+				submenuItems = append(submenuItems,
+					&ui.SpacerSubmenuItem{},
+					&ui.TitleSubmenuItem{Label: "Advanced - Linux"},
+
+					ui.NewSettingsSubmenuItem("NetFilter Mode",
+						[]string{"On", "No Divert", "Off"},
+						netfilterMode,
+						func(newLabel string) tea.Msg {
+							var netfilterMode preftype.NetfilterMode
+							switch newLabel {
+							case "On":
+								netfilterMode = preftype.NetfilterOn
+							case "No Divert":
+								netfilterMode = preftype.NetfilterNoDivert
+							case "Off":
+								netfilterMode = preftype.NetfilterOff
+							}
+
+							return editPrefs(&ipn.MaskedPrefs{
+								Prefs: ipn.Prefs{
+									NetfilterMode: netfilterMode,
+								},
+								NetfilterModeSet: true,
+							})
+						},
+					),
+
+					ui.NewYesNoSettingsSubmenuItem("Enable Stateful Filtering",
+						!noStatefulFiltering,
+						func(newValue bool) tea.Msg {
+							return editPrefs(&ipn.MaskedPrefs{
+								Prefs: ipn.Prefs{
+									NoStatefulFiltering: opt.NewBool(!newValue),
+								},
+								NoStatefulFilteringSet: true,
+							})
+						},
+					),
+				)
+			}
+
+			m.settings.Submenu.SetItems(submenuItems)
+		}
+
 		// Make sure the menu items are visible.
 		m.menu.SetItems([]*ui.AppmenuItem{
 			m.deviceInfo,
 			m.exitNodes,
+			m.settings,
 		})
 	} else {
 		// Hide the menu items if not connected.

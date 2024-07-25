@@ -16,6 +16,17 @@ func Status(ctx context.Context) (*ipnstate.Status, error) {
 	return ts.Status(ctx)
 }
 
+// Get current preferences.
+func Prefs(ctx context.Context) (*ipn.Prefs, error) {
+	return ts.GetPrefs(ctx)
+}
+
+// Update preferences.
+func EditPrefs(ctx context.Context, maskedPrefs *ipn.MaskedPrefs) error {
+	_, err := ts.EditPrefs(ctx, maskedPrefs)
+	return err
+}
+
 // Return the tailnet lock status of the current node.
 func LockStatus(ctx context.Context) (*ipnstate.NetworkLockStatus, error) {
 	return ts.NetworkLockStatus(ctx)
