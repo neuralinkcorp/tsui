@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/neuralink/tsui/browser"
 	"github.com/neuralink/tsui/libts"
+	"github.com/neuralink/tsui/ui"
 	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
@@ -17,6 +18,9 @@ type tickMsg struct{}
 
 // Message triggered on each ping poller tick.
 type pingTickMsg struct{}
+
+// Message to increment the animation frame counter.
+type animationTickMsg struct{}
 
 // Message containing the result of a successful Tailscale state update.
 type stateMsg libts.State
@@ -194,17 +198,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return pingTickMsg{}
 			}),
 		)
+	case animationTickMsg:
+		m.animationT++
+		return m, tea.Tick(ui.PoggersAnimationInterval, func(_ time.Time) tea.Msg {
+			return animationTickMsg{}
+		})
 
 	// When our updaters return, update our model and refresh the menus.
 	case stateMsg:
 		m.state = libts.State(msg)
 		m.updateMenus()
-		if m.state.BackendState == ipn.NoState.String() {
-			// Do updates more frequently if we have no state because it should load soon.
-			return m, tea.Tick(500*time.Millisecond, func(_ time.Time) tea.Msg {
-				return tickMsg{}
-			})
-		}
 	case pingResultsMsg:
 		m.pings = msg
 		m.updateMenus()

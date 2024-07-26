@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -70,6 +71,10 @@ type model struct {
 	// Current "generation" number for the status. Incremented every time the status
 	// is updated and used to keep track of status expiration messages.
 	statusGen int
+
+	// Frame counter for the loading animation. This is always running in the background,
+	// even if the animation is not visible.
+	animationT int
 }
 
 // Initialize the application state.
@@ -108,6 +113,9 @@ func (m model) Init() tea.Cmd {
 		tea.Tick(pingTickInterval, func(_ time.Time) tea.Msg {
 			return pingTickMsg{}
 		}),
+		tea.Tick(ui.PoggersAnimationInterval, func(_ time.Time) tea.Msg {
+			return animationTickMsg{}
+		}),
 	)
 }
 
@@ -118,18 +126,17 @@ func renderMainError(err error) string {
 }
 
 func main() {
-	fmt.Println(ui.Go())
-	// m, err := initialModel()
-	// if err != nil {
-	// 	fmt.Fprintln(os.Stderr, renderMainError(err))
-	// 	os.Exit(1)
-	// }
+	m, err := initialModel()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, renderMainError(err))
+		os.Exit(1)
+	}
 
-	// // Enable "alternate screen" mode, a terminal convention designed for rendering
-	// // full-screen, interactive UIs.
-	// p := tea.NewProgram(m, tea.WithAltScreen())
-	// if _, err := p.Run(); err != nil {
-	// 	fmt.Fprintln(os.Stderr, renderMainError(err))
-	// 	os.Exit(1)
-	// }
+	// Enable "alternate screen" mode, a terminal convention designed for rendering
+	// full-screen, interactive UIs.
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, renderMainError(err))
+		os.Exit(1)
+	}
 }

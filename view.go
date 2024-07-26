@@ -97,7 +97,7 @@ func renderHeader(m *model) string {
 		MarginRight(4).
 		Render(logo)
 
-	status := "Tailscale Status: "
+	status := "Status: "
 	status += renderStatusButton(m.state.BackendState, m.state.CurrentExitNode != nil)
 	if m.state.BackendState == ipn.Running.String() {
 		status += lipgloss.NewStyle().
@@ -274,13 +274,11 @@ func (m model) View() string {
 		}, "\n"))
 
 	case ipn.NoState.String():
-		middle = renderMiddleBanner(&m, middleHeight,
-			`Please wait, loading...`)
+		middle = renderMiddleBanner(&m, middleHeight, ui.PoggersAnimationFrame(m.animationT))
 
 	case ipn.Starting.String():
 		if m.state.AuthURL == "" {
-			middle = renderMiddleBanner(&m, middleHeight,
-				`Tailscale is starting...`)
+			middle = renderMiddleBanner(&m, middleHeight, ui.PoggersAnimationFrame(m.animationT))
 		} else {
 			// If we have an AuthURL in the Starting state, that means the user is reauthenticating!
 			lines := []string{

@@ -35,7 +35,7 @@ func (i *AppmenuItem) render(isSelected bool, isAnySubmenuOpen bool) string {
 	}
 
 	content := RenderSplit(
-		i.Label,
+		" "+i.Label,
 		style.
 			Faint(true).
 			Render(i.AdditionalLabel),
