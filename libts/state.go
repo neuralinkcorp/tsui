@@ -1,6 +1,7 @@
 package libts
 
 import (
+	"context"
 	"slices"
 	"strings"
 
@@ -64,13 +65,21 @@ func getSortedExitNodes(tsStatus *ipnstate.Status) []*ipnstate.PeerStatus {
 	return exitNodes
 }
 
-// Make a State from an ipnstate.Status. Safely returns an empty state value if the status is nil.
-func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.NetworkLockStatus) State {
-	if status == nil {
-		return State{
-			Prefs:        prefs,
-			BackendState: ipn.NoState.String(),
-		}
+// Make a current State by making necessary Tailscale API calls.
+func GetState(ctx context.Context) (State, error) {
+	status, err := Status(ctx)
+	if err != nil {
+		return State{}, err
+	}
+
+	prefs, err := Prefs(ctx)
+	if err != nil {
+		return State{}, err
+	}
+
+	lock, err := LockStatus(ctx)
+	if err != nil {
+		return State{}, err
 	}
 
 	state := State{
@@ -111,5 +120,5 @@ func MakeState(status *ipnstate.Status, prefs *ipn.Prefs, lock *ipnstate.Network
 		}
 	}
 
-	return state
+	return state, nil
 }

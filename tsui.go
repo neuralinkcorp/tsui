@@ -82,22 +82,10 @@ func initialModel() (model, error) {
 		settings: &ui.AppmenuItem{LeftLabel: "Settings"},
 	}
 
-	status, err := libts.Status(ctx)
+	state, err := libts.GetState(ctx)
 	if err != nil {
 		return m, err
 	}
-
-	prefs, err := libts.Prefs(ctx)
-	if err != nil {
-		return m, err
-	}
-
-	lock, err := libts.LockStatus(ctx)
-	if err != nil {
-		return m, err
-	}
-
-	state := libts.MakeState(status, prefs, lock)
 	m.updateFromState(state)
 
 	return m, nil

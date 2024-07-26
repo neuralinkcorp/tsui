@@ -39,22 +39,10 @@ type statusExpiredMsg int
 // Command that retrives a new Tailscale state and triggers a stateMsg.
 // This will be run in a goroutine by the bubbletea runtime.
 func updateState() tea.Msg {
-	status, err := libts.Status(ctx)
+	state, err := libts.GetState(ctx)
 	if err != nil {
 		return errorMsg(err)
 	}
-
-	prefs, err := libts.Prefs(ctx)
-	if err != nil {
-		return errorMsg(err)
-	}
-
-	lock, err := libts.LockStatus(ctx)
-	if err != nil {
-		return errorMsg(err)
-	}
-
-	state := libts.MakeState(status, prefs, lock)
 	return stateMsg(state)
 }
 
