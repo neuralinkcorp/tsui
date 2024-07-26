@@ -10,15 +10,6 @@ import (
 	"tailscale.com/ipn"
 )
 
-var logo = strings.Join([]string{
-	`   __             _ `,
-	`  / /________  __(_)`,
-	` / __/ ___/ / / / / `,
-	`/ /_(__  ) /_/ / /  `,
-	`\__/____/\__,_/_/   `,
-	`    by neuralink    `,
-}, "\n")
-
 // Format the status button in the header bar.
 func renderStatusButton(backendState string, isUsingExitNode bool) string {
 	buttonStyle := lipgloss.NewStyle().
@@ -95,7 +86,7 @@ func renderHeader(m *model) string {
 	logo := lipgloss.NewStyle().
 		Foreground(ui.Primary).
 		MarginRight(4).
-		Render(logo)
+		Render(ui.Logo)
 
 	status := "Status: "
 	status += renderStatusButton(m.state.BackendState, m.state.CurrentExitNode != nil)

@@ -2,7 +2,7 @@
 
 an elegant tui for configuring tailscale, because tailscale does not have a gui on linux. still in development.
 
-<img width="1062" alt="Screenshot 2024-07-24 at 18 15 26" src="https://github.com/user-attachments/assets/9796f153-e612-4204-a114-318df7f3f3fd">
+<img width="1039" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/9768a858-027a-431b-a5e2-39457d508648">
 
 ## installation
 

@@ -119,24 +119,24 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
-func renderMainError(err error) string {
-	return lipgloss.NewStyle().
+func mainError(err error) {
+	text := lipgloss.NewStyle().
 		Foreground(ui.Red).
 		Render(err.Error())
+	fmt.Fprintln(os.Stderr, text)
+	os.Exit(1)
 }
 
 func main() {
 	m, err := initialModel()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, renderMainError(err))
-		os.Exit(1)
+		mainError(err)
 	}
 
 	// Enable "alternate screen" mode, a terminal convention designed for rendering
 	// full-screen, interactive UIs.
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, renderMainError(err))
-		os.Exit(1)
+		mainError(err)
 	}
 }

@@ -333,6 +333,7 @@ func (m *model) updateMenus() {
 		})
 	} else {
 		// Hide the menu items if not connected.
+		// I mean, they won't be visible anyway, but extra safety is always nice!
 		m.menu.SetItems([]*ui.AppmenuItem{})
 	}
 }
