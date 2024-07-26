@@ -151,8 +151,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 						return successMsg("Starting login flow. This may take a few seconds.")
 					}
-				} else {
+				} else if !isLinuxRoot() {
 					// If the auth flow has already started, we need to open the browser ourselves.
+					// (But not if we're root on Linux.)
 					return m, func() tea.Msg {
 						err := browser.OpenURL(m.state.AuthURL)
 						if err != nil {
@@ -165,7 +166,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case ipn.Starting.String():
 				// If we have an AuthURL in the Starting state, that means the user is reauthenticating
 				// and we also need to open the browser!
-				if m.state.AuthURL != "" {
+				// (But not if we're root on Linux.)
+				if m.state.AuthURL != "" && !isLinuxRoot() {
 					return m, func() tea.Msg {
 						err := browser.OpenURL(m.state.AuthURL)
 						if err != nil {

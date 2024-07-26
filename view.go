@@ -52,12 +52,18 @@ func renderStatusButton(backendState string, isUsingExitNode bool) string {
 			Background(ui.Green).
 			Foreground(ui.Black).
 			Render(text)
+
+	case ipn.Stopped.String():
+		return buttonStyle.
+			Background(ui.Red).
+			Foreground(ui.Black).
+			Render("Not Connected")
 	}
 
 	return buttonStyle.
 		Background(ui.Red).
 		Foreground(ui.Black).
-		Render("Not Connected")
+		Render("No State")
 }
 
 // Render the locked out warning. Returns static output; should be called conditionally.
@@ -244,9 +250,14 @@ func (m model) View() string {
 		} else {
 			lines = append(lines,
 				fmt.Sprintf(`Login URL: %s`, styledAuthUrl),
-				``,
-				`Press . to open in browser.`,
 			)
+			if !isLinuxRoot() {
+				// We can't open the browser for them if running as the root user on Linux.
+				lines = append(lines,
+					``,
+					`Press . to open in browser.`,
+				)
+			}
 		}
 
 		middle = renderMiddleBanner(&m, middleHeight, strings.Join(lines, "\n"))
@@ -264,15 +275,21 @@ func (m model) View() string {
 				`Tailscale is starting...`)
 		} else {
 			// If we have an AuthURL in the Starting state, that means the user is reauthenticating!
-			middle = renderMiddleBanner(&m, middleHeight, strings.Join([]string{
+			lines := []string{
 				lipgloss.NewStyle().
 					Bold(true).
 					Render(`Reauthenticate with Tailscale`),
 				``,
 				fmt.Sprintf(`Login URL: %s`, styledAuthUrl),
-				``,
-				`Press . to open in browser.`,
-			}, "\n"))
+			}
+			if !isLinuxRoot() {
+				// We can't open the browser for them if running as the root user on Linux.
+				lines = append(lines,
+					``,
+					`Press . to open in browser.`,
+				)
+			}
+			middle = renderMiddleBanner(&m, middleHeight, strings.Join(lines, "\n"))
 		}
 	}
 
