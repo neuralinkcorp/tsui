@@ -130,7 +130,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 			// If stopped, start Tailscale.
-			case ipn.NoState.String(), ipn.Stopped.String():
+			case ipn.Stopped.String():
 				return m, func() tea.Msg {
 					err := libts.Up(ctx)
 					if err != nil {
@@ -199,6 +199,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case stateMsg:
 		m.state = libts.State(msg)
 		m.updateMenus()
+		if m.state.BackendState == ipn.NoState.String() {
+			// Do updates more frequently if we have no state because it should load soon.
+			return m, tea.Tick(500*time.Millisecond, func(_ time.Time) tea.Msg {
+				return updateState
+			})
+		}
 	case pingResultsMsg:
 		m.pings = msg
 		m.updateMenus()

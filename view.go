@@ -59,12 +59,15 @@ func renderStatusButton(backendState string, isUsingExitNode bool) string {
 			Background(ui.Red).
 			Foreground(ui.Black).
 			Render("Not Connected")
+
+	case ipn.NoState.String():
+		return buttonStyle.
+			Background(ui.Blue).
+			Foreground(ui.White).
+			Render("Loading...")
 	}
 
-	return buttonStyle.
-		Background(ui.Red).
-		Foreground(ui.Black).
-		Render("No State")
+	return "???"
 }
 
 // Render the locked out warning. Returns static output; should be called conditionally.
@@ -263,12 +266,16 @@ func (m model) View() string {
 
 		middle = renderMiddleBanner(&m, middleHeight, strings.Join(lines, "\n"))
 
-	case ipn.NoState.String(), ipn.Stopped.String():
+	case ipn.Stopped.String():
 		middle = renderMiddleBanner(&m, middleHeight, strings.Join([]string{
 			`The Tailscale daemon isn't running.`,
 			``,
 			`Press . to bring Tailscale up.`,
 		}, "\n"))
+
+	case ipn.NoState.String():
+		middle = renderMiddleBanner(&m, middleHeight,
+			`Tailscale is loading...`)
 
 	case ipn.Starting.String():
 		if m.state.AuthURL == "" {
