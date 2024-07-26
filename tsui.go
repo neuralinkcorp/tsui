@@ -22,10 +22,10 @@ var Version = "local"
 
 const (
 	// Rate at which to poll Tailscale for status updates.
-	tickInterval = 5 * time.Second
+	tickInterval = 3 * time.Second
 
 	// Rate at which to gather latency from peers.
-	pingTickInterval = 10 * time.Second
+	pingTickInterval = 6 * time.Second
 	// Per-peer ping timeout.
 	pingTimeout = 1 * time.Second
 
@@ -79,17 +79,18 @@ type model struct {
 func initialModel() (model, error) {
 	m := model{
 		// Main menu items.
-		deviceInfo: &ui.AppmenuItem{LeftLabel: "This Device"},
-		exitNodes: &ui.AppmenuItem{LeftLabel: "Exit Nodes",
+		deviceInfo: &ui.AppmenuItem{Label: "This Device"},
+		exitNodes: &ui.AppmenuItem{Label: "Exit Nodes",
 			Submenu: ui.Submenu{Exclusivity: ui.SubmenuExclusivityOne},
 		},
-		settings: &ui.AppmenuItem{LeftLabel: "Settings"},
+		settings: &ui.AppmenuItem{Label: "Settings"},
 	}
 
 	state, err := libts.GetState(ctx)
 	if err != nil {
 		return m, err
 	}
+
 	m.state = state
 	m.updateMenus()
 
@@ -98,8 +99,19 @@ func initialModel() (model, error) {
 
 // Bubbletea init function.
 func (m model) Init() tea.Cmd {
-	// Perform our initial state fetch to populate menus.
-	return updateState
+	return tea.Batch(
+		// Perform our initial state fetch to populate menus
+		updateState,
+		// Run an initial batch of pings.
+		makeDoPings(m.state.SortedExitNodes),
+		// And kick off our ticks.
+		tea.Tick(tickInterval, func(_ time.Time) tea.Msg {
+			return tickMsg{}
+		}),
+		tea.Tick(pingTickInterval, func(_ time.Time) tea.Msg {
+			return pingTickMsg{}
+		}),
+	)
 }
 
 func renderMainError(err error) string {

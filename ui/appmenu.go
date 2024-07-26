@@ -7,10 +7,10 @@ import (
 
 // An item in the main menu, containing a submenu.
 type AppmenuItem struct {
-	// Left-aligned label text.
-	LeftLabel string
-	// Right-aligned label text.
-	RightLabel string
+	// The text to be displayed for this menu item.
+	Label string
+	// An extra label shown on the right side. Will be shown in a muted color.
+	AdditionalLabel string
 	// Submenu that this item reveals.
 	Submenu Submenu
 }
@@ -34,18 +34,18 @@ func (i *AppmenuItem) render(isSelected bool, isAnySubmenuOpen bool) string {
 		} // else unstyled
 	}
 
-	left := style.
-		PaddingLeft(1).
-		Render(i.LeftLabel)
-	right := style.
-		Width(35 - lipgloss.Width(left)).
-		Faint(true).
-		AlignHorizontal(lipgloss.Right).
-		Render(i.RightLabel)
+	content := RenderSplit(
+		i.Label,
+		style.
+			Faint(true).
+			Render(i.AdditionalLabel),
+		35,
+		style,
+	)
 	arrow := style.
 		Padding(0, 1).
 		Render(">")
-	return left + right + arrow
+	return content + arrow
 }
 
 // A state container for the main application menu.

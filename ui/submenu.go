@@ -49,6 +49,8 @@ func (v SubmenuItemVariant) color() lipgloss.Color {
 type LabeledSubmenuItem struct {
 	// The text to be displayed for this menu item.
 	Label string
+	// An extra label shown on the right side. Will be shown in a muted color.
+	AdditionalLabel string
 	// Visual variant.
 	Variant SubmenuItemVariant
 	// Callback when the item is activated.
@@ -70,36 +72,47 @@ func (item *LabeledSubmenuItem) clearActiveFlag() {
 }
 
 func (item *LabeledSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
-	style := lipgloss.NewStyle().
-		PaddingRight(1).
-		PaddingLeft(2).
-		Width(submenuItemWidth)
+	colorStyle := lipgloss.NewStyle()
 
 	if isSubmenuOpen {
 		if isSelected {
-			style = style.
+			colorStyle = colorStyle.
 				Background(Secondary).
 				Foreground(Black)
 		} else if item.IsDim {
-			style = style.
+			colorStyle = colorStyle.
 				Faint(true)
 		}
 
 		if item.Variant != SubmenuItemVariantDefault {
 			if isSelected {
-				style = style.
+				colorStyle = colorStyle.
 					Bold(true)
 			} else if !item.IsDim {
-				style = style.
+				colorStyle = colorStyle.
 					Foreground(item.Variant.color())
 			}
 		}
 	} else {
-		style = style.
+		colorStyle = colorStyle.
 			Faint(true)
 	}
 
-	return style.Render(item.Label)
+	outerStyle := colorStyle.
+		PaddingRight(1).
+		PaddingLeft(2).
+		Width(submenuItemWidth)
+
+	return outerStyle.Render(
+		RenderSplit(
+			colorStyle.Render(item.Label),
+			colorStyle.
+				Faint(true).
+				Render(item.AdditionalLabel),
+			submenuItemWidth-outerStyle.GetHorizontalPadding(),
+			colorStyle,
+		),
+	)
 }
 
 // A menu item with a label that can be toggled active or inactive.
@@ -122,41 +135,39 @@ func (item *ToggleableSubmenuItem) clearActiveFlag() {
 }
 
 func (item *ToggleableSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
-	style := lipgloss.NewStyle().
-		Padding(0, 1).
-		Width(submenuItemWidth)
+	colorStyle := lipgloss.NewStyle()
 
 	if isSubmenuOpen {
 		if item.IsActive {
-			style = style.
+			colorStyle = colorStyle.
 				Bold(true)
 
 			if item.Variant == SubmenuItemVariantDefault {
-				style = style.
+				colorStyle = colorStyle.
 					Foreground(Secondary)
 			}
 		}
 
 		if isSelected {
-			style = style.
+			colorStyle = colorStyle.
 				Background(Secondary).
 				Foreground(Black)
 		} else if item.IsDim {
-			style = style.
+			colorStyle = colorStyle.
 				Faint(true)
 		}
 
 		if item.Variant != SubmenuItemVariantDefault {
 			if isSelected {
-				style = style.
+				colorStyle = colorStyle.
 					Bold(true)
 			} else if !item.IsDim {
-				style = style.
+				colorStyle = colorStyle.
 					Foreground(item.Variant.color())
 			}
 		}
 	} else {
-		style = style.
+		colorStyle = colorStyle.
 			Faint(true)
 	}
 
@@ -165,7 +176,20 @@ func (item *ToggleableSubmenuItem) render(isSelected bool, isSubmenuOpen bool) s
 		labelPrefix = "*"
 	}
 
-	return style.Render(labelPrefix + item.Label)
+	outerStyle := colorStyle.
+		Padding(0, 1).
+		Width(submenuItemWidth)
+
+	return outerStyle.Render(
+		RenderSplit(
+			labelPrefix+item.Label,
+			colorStyle.
+				Faint(true).
+				Render(item.AdditionalLabel),
+			submenuItemWidth-outerStyle.GetHorizontalPadding(),
+			colorStyle,
+		),
+	)
 }
 
 // A submenu item for a "settings control" that can have multiple values and activated to switch between them.
@@ -230,11 +254,6 @@ func (item *SettingSubmenuItem) clearActiveFlag() {}
 func (item *SettingSubmenuItem) render(isSelected bool, isSubmenuOpen bool) string {
 	selectedLabel := item.options[item.selected]
 
-	// Label with right-side padding to align the value label to the right.
-	expandedLabel := lipgloss.NewStyle().
-		Width(submenuItemWidth - lipgloss.Width(selectedLabel) - 3). // 3 for the padding
-		Render(item.Label)
-
 	style := lipgloss.NewStyle().
 		PaddingRight(1).
 		PaddingLeft(2).
@@ -270,7 +289,14 @@ func (item *SettingSubmenuItem) render(isSelected bool, isSubmenuOpen bool) stri
 			Faint(true)
 	}
 
-	return style.Render(expandedLabel + selectedLabelStyle.Render(selectedLabel))
+	return style.Render(
+		RenderSplit(
+			item.Label,
+			selectedLabelStyle.Render(selectedLabel),
+			submenuItemWidth-style.GetHorizontalPadding(),
+			lipgloss.NewStyle(),
+		),
+	)
 }
 
 // A divider in a menu.

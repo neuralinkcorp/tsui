@@ -23,7 +23,7 @@ func (m *model) updateMenus() {
 			submenuItems := []ui.SubmenuItem{
 				&ui.TitleSubmenuItem{Label: "Name"},
 				&ui.LabeledSubmenuItem{
-					Label: m.state.Self.DNSName[:len(m.state.Self.DNSName)-1],
+					Label: m.state.Self.DNSName[:len(m.state.Self.DNSName)-1], // Remove the trailing dot.
 					OnActivate: func() tea.Msg {
 						clipboard.Write(clipboard.FmtText, []byte(m.state.Self.DNSName[:len(m.state.Self.DNSName)-1]))
 						return successMsg("Copied full domain to clipboard.")
@@ -128,18 +128,17 @@ func (m *model) updateMenus() {
 				// Offset for the "None" item and the divider.
 				i += 2
 
-				pingText := "???"
+				pingLabel := "???"
 				if !exitNode.Online {
-					pingText = "offline"
+					pingLabel = "Offline"
 				} else if m.pings[exitNode.ID] != nil {
-					pingText = fmt.Sprintf("%dms", int(math.Round(m.pings[exitNode.ID].LatencySeconds*1000)))
+					pingLabel = fmt.Sprintf("%dms", int(math.Round(m.pings[exitNode.ID].LatencySeconds*1000)))
 				}
-
-				label := fmt.Sprintf("%s (%s)", libts.PeerName(exitNode), pingText)
 
 				exitNodeItems[i] = &ui.ToggleableSubmenuItem{
 					LabeledSubmenuItem: ui.LabeledSubmenuItem{
-						Label: label,
+						Label:           libts.PeerName(exitNode),
+						AdditionalLabel: pingLabel,
 						OnActivate: func() tea.Msg {
 							err := libts.SetExitNode(ctx, exitNode)
 							if err != nil {
@@ -153,7 +152,7 @@ func (m *model) updateMenus() {
 				}
 			}
 
-			m.exitNodes.RightLabel = m.state.CurrentExitNodeName
+			m.exitNodes.AdditionalLabel = m.state.CurrentExitNodeName
 			m.exitNodes.Submenu.SetItems(exitNodeItems)
 		}
 

@@ -2,7 +2,6 @@ package libts
 
 import (
 	"context"
-	"net/netip"
 
 	"tailscale.com/client/tailscale"
 	"tailscale.com/ipn"
@@ -34,14 +33,9 @@ func StartLoginInteractive(ctx context.Context) error {
 
 // Ping a peer.
 func PingPeer(ctx context.Context, peer *ipnstate.PeerStatus) (*ipnstate.PingResult, error) {
-	addr, err := netip.ParseAddr(peer.CurAddr)
-	if err != nil {
-		return nil, err
-	}
-
 	// Discovery ping is the most reliable because it doesn't rely on the host accepting ICMP or anything.
 	// This is what `tailscale ping` uses by default.
-	return ts.Ping(ctx, addr, tailcfg.PingDisco)
+	return ts.Ping(ctx, peer.TailscaleIPs[0], tailcfg.PingDisco)
 }
 
 // Logs you out.

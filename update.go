@@ -18,10 +18,10 @@ type tickMsg struct{}
 // Message triggered on each ping poller tick.
 type pingTickMsg struct{}
 
-// Message representing a successful Tailscale state update.
+// Message containing the result of a successful Tailscale state update.
 type stateMsg libts.State
 
-// Message with our ping results so they can be stored in the model.
+// Message with ping results ready to be stored in the model.
 type pingResultsMsg map[tailcfg.StableNodeID]*ipnstate.PingResult
 
 // Message representing some transient error.
@@ -79,16 +79,6 @@ func editPrefs(maskedPrefs *ipn.MaskedPrefs) tea.Msg {
 
 // Bubbletea update function; our main "event" handler.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Create our ticker command which will be our "default return" in the absence of any other commands.
-	tick := tea.Batch(
-		tea.Tick(tickInterval, func(_ time.Time) tea.Msg {
-			return tickMsg{}
-		}),
-		tea.Tick(pingTickInterval, func(_ time.Time) tea.Msg {
-			return pingTickMsg{}
-		}),
-	)
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		needsClear := msg.Width < m.terminalWidth || msg.Height > m.terminalHeight
@@ -168,7 +158,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						if err != nil {
 							return errorMsg(err)
 						}
-						return tick()
+						return nil
 					}
 				}
 
@@ -181,18 +171,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						if err != nil {
 							return errorMsg(err)
 						}
-						return tick()
+						return nil
 					}
 				}
 			}
 		}
 
-	// On ticks, run the appropriate commands.
+	// On ticks, run the appropriate commands, and kick off the next tick.
 	case tickMsg:
-		return m, updateState
+		return m, tea.Batch(
+			updateState,
+			tea.Tick(tickInterval, func(_ time.Time) tea.Msg {
+				return tickMsg{}
+			}),
+		)
 	case pingTickMsg:
 		// For now we'll just run this on our exit nodes.
-		return m, makeDoPings(m.state.SortedExitNodes)
+		return m, tea.Batch(
+			makeDoPings(m.state.SortedExitNodes),
+			tea.Tick(pingTickInterval, func(_ time.Time) tea.Msg {
+				return pingTickMsg{}
+			}),
+		)
 
 	// When our updaters return, update our model and refresh the menus.
 	case stateMsg:
@@ -203,35 +203,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateMenus()
 
 	// Display status bar notices.
-	case errorMsg:
-		m.statusType = statusTypeError
-		m.statusText = msg.Error()
+	case errorMsg, successMsg, tipMsg:
+		var lifetime time.Duration
+
+		switch msg := msg.(type) {
+		case errorMsg:
+			m.statusType = statusTypeError
+			m.statusText = msg.Error()
+			lifetime = errorLifetime
+		case successMsg:
+			m.statusType = statusTypeSuccess
+			m.statusText = string(msg)
+			lifetime = successLifetime
+		case tipMsg:
+			m.statusType = statusTypeTip
+			m.statusText = string(msg)
+			lifetime = tipLifetime
+		}
+
 		m.statusGen++
 		return m, tea.Batch(
 			// Make sure the state is up-to-date.
 			updateState,
-
-			func() tea.Msg {
-				time.Sleep(errorLifetime)
+			// Clear after the relevant interval.
+			tea.Tick(lifetime, func(_ time.Time) tea.Msg {
 				return statusExpiredMsg(m.statusGen)
-			},
+			}),
 		)
-	case successMsg:
-		m.statusType = statusTypeSuccess
-		m.statusText = string(msg)
-		m.statusGen++
-		return m, func() tea.Msg {
-			time.Sleep(successLifetime)
-			return statusExpiredMsg(m.statusGen)
-		}
-	case tipMsg:
-		m.statusType = statusTypeTip
-		m.statusText = string(msg)
-		m.statusGen++
-		return m, func() tea.Msg {
-			time.Sleep(tipLifetime)
-			return statusExpiredMsg(m.statusGen)
-		}
 
 	// Clear the status when it expires.
 	case statusExpiredMsg:
@@ -240,5 +238,5 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	return m, tick
+	return m, nil
 }
