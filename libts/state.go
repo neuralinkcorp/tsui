@@ -42,6 +42,11 @@ type State struct {
 	CurrentExitNode *tailcfg.StableNodeID
 	// Name of the currently selected exit node or an empty string if none is selected.
 	CurrentExitNodeName string
+
+	// Total bytes received from peers.
+	RxBytes int64
+	// Total bytes sent to peers.
+	TxBytes int64
 }
 
 // Get a sorted list of exit node peers, alphabetically pre-sorted by the result of the PeerName function.
@@ -89,6 +94,11 @@ func GetState(ctx context.Context) (State, error) {
 		TSVersion:       status.Version,
 		Self:            status.Self,
 		SortedExitNodes: getSortedExitNodes(status),
+	}
+
+	for _, peer := range status.Peer {
+		state.TxBytes += peer.TxBytes
+		state.RxBytes += peer.RxBytes
 	}
 
 	versionSplitIndex := strings.IndexByte(state.TSVersion, '-')

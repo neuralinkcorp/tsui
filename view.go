@@ -108,11 +108,6 @@ func renderHeader(m *model) string {
 			Render(m.state.User.LoginName)
 	}
 
-	status += "\n"
-	status += lipgloss.NewStyle().
-		Faint(true).
-		Render("Traffic: " + ui.FormatBytes(m.state.Self.RxBytes+m.state.Self.TxBytes))
-
 	// App versions.
 	versions := "tsui:      " + Version + "\n"
 	versions += "tailscale: "
@@ -145,37 +140,50 @@ func renderMiddleBanner(m *model, height int, text string) string {
 
 // Render the bottom status text.
 func renderStatus(m *model) string {
-	if m.statusText == "" {
-		return ""
-	}
-
-	var color lipgloss.Color
 	var statusPrefix string
+	var statusText string
 
-	switch m.statusType {
-	case statusTypeError:
-		color = ui.Red
+	if m.statusText == "" {
+		// Show up/down traffic only if we have data.
+		if m.state.BackendState != ipn.Running.String() {
+			return ""
+		}
 
-		statusPrefix = lipgloss.NewStyle().
+		statusText = lipgloss.NewStyle().
+			Faint(true).
+			Render(fmt.Sprintf(
+				"▲ %s | %s ▼",
+				ui.FormatBytes(m.state.TxBytes),
+				ui.FormatBytes(m.state.RxBytes),
+			))
+	} else {
+		var color lipgloss.Color
+
+		switch m.statusType {
+		case statusTypeError:
+			color = ui.Red
+
+			statusPrefix = lipgloss.NewStyle().
+				Foreground(color).
+				Bold(true).
+				Render("Error: ")
+
+		case statusTypeSuccess:
+			color = ui.Green
+
+		case statusTypeTip:
+			color = ui.Blue
+
+			statusPrefix = lipgloss.NewStyle().
+				Foreground(color).
+				Bold(true).
+				Render("Tip! ")
+		}
+
+		statusText = lipgloss.NewStyle().
 			Foreground(color).
-			Bold(true).
-			Render("Error: ")
-
-	case statusTypeSuccess:
-		color = ui.Green
-
-	case statusTypeTip:
-		color = ui.Blue
-
-		statusPrefix = lipgloss.NewStyle().
-			Foreground(color).
-			Bold(true).
-			Render("Tip! ")
+			Render(m.statusText)
 	}
-
-	statusText := lipgloss.NewStyle().
-		Foreground(color).
-		Render(m.statusText)
 
 	return lipgloss.NewStyle().
 		Width(m.terminalWidth).

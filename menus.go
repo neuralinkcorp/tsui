@@ -55,10 +55,10 @@ func (m *model) updateMenus() {
 				&ui.SpacerSubmenuItem{},
 				&ui.TitleSubmenuItem{Label: "Debug Info"},
 				&ui.LabeledSubmenuItem{
-					Label: string(m.state.Self.ID),
+					Label: fmt.Sprintf("ID: %s", m.state.Self.ID),
 					OnActivate: func() tea.Msg {
 						clipboard.Write(clipboard.FmtText, []byte(string(m.state.Self.ID)))
-						return successMsg("Copied Tailscale ID to clipboard.")
+						return successMsg("Copied Tailscale node ID to clipboard.")
 					},
 				},
 				&ui.LabeledSubmenuItem{
