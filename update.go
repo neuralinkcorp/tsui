@@ -5,8 +5,8 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/neuralink/tsui/browser"
 	"github.com/neuralink/tsui/libts"
-	"github.com/pkg/browser"
 	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
@@ -151,9 +151,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 						return successMsg("Starting login flow. This may take a few seconds.")
 					}
-				} else if !isLinuxRoot() {
+				} else if browser.IsSupported() {
 					// If the auth flow has already started, we need to open the browser ourselves.
-					// (But not if we're root on Linux.)
 					return m, func() tea.Msg {
 						err := browser.OpenURL(m.state.AuthURL)
 						if err != nil {
@@ -167,7 +166,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// If we have an AuthURL in the Starting state, that means the user is reauthenticating
 				// and we also need to open the browser!
 				// (But not if we're root on Linux.)
-				if m.state.AuthURL != "" && !isLinuxRoot() {
+				if m.state.AuthURL != "" && browser.IsSupported() {
 					return m, func() tea.Msg {
 						err := browser.OpenURL(m.state.AuthURL)
 						if err != nil {

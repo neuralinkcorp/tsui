@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/neuralink/tsui/browser"
 	"github.com/neuralink/tsui/ui"
 	"tailscale.com/ipn"
 )
@@ -251,7 +252,7 @@ func (m model) View() string {
 			lines = append(lines,
 				fmt.Sprintf(`Login URL: %s`, styledAuthUrl),
 			)
-			if !isLinuxRoot() {
+			if browser.IsSupported() {
 				// We can't open the browser for them if running as the root user on Linux.
 				lines = append(lines,
 					``,
@@ -282,7 +283,7 @@ func (m model) View() string {
 				``,
 				fmt.Sprintf(`Login URL: %s`, styledAuthUrl),
 			}
-			if !isLinuxRoot() {
+			if browser.IsSupported() {
 				// We can't open the browser for them if running as the root user on Linux.
 				lines = append(lines,
 					``,

@@ -5,8 +5,8 @@ go 1.22.5
 require (
 	github.com/charmbracelet/bubbletea v0.26.6
 	github.com/charmbracelet/lipgloss v0.12.1
-	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	golang.design/x/clipboard v0.7.0
+	golang.org/x/sys v0.21.0
 	tailscale.com v1.70.0
 )
 
@@ -50,7 +50,6 @@ require (
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
 )

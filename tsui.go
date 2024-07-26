@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/neuralink/tsui/libts"
 	"github.com/neuralink/tsui/ui"
-	"github.com/pkg/browser"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
 )
@@ -121,11 +119,6 @@ func renderMainError(err error) string {
 }
 
 func main() {
-	// We don't want the browser opening commands to print any output outside of the
-	// context of our UI rendering, which would break the UI.
-	browser.Stdout = io.Discard
-	browser.Stderr = io.Discard
-
 	m, err := initialModel()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, renderMainError(err))
