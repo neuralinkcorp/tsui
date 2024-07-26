@@ -275,7 +275,7 @@ func (m model) View() string {
 
 	case ipn.NoState.String():
 		middle = renderMiddleBanner(&m, middleHeight,
-			`Tailscale is loading...`)
+			`Please wait, loading...`)
 
 	case ipn.Starting.String():
 		if m.state.AuthURL == "" {

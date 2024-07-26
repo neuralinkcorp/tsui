@@ -202,7 +202,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state.BackendState == ipn.NoState.String() {
 			// Do updates more frequently if we have no state because it should load soon.
 			return m, tea.Tick(500*time.Millisecond, func(_ time.Time) tea.Msg {
-				return updateState
+				return updateState()
 			})
 		}
 	case pingResultsMsg:
