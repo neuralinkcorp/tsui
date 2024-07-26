@@ -30,6 +30,21 @@ func FormatDuration(duration time.Duration) string {
 	}
 }
 
+// Formate a byte count to a human-friendly string.
+func FormatBytes(bytes int64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d B", bytes)
+	} else if bytes < 1024*1024 {
+		return fmt.Sprintf("%.2f KiB", float64(bytes)/1024)
+	} else if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.2f MiB", float64(bytes)/1024/1024)
+	} else if bytes < 1024*1024*1024*1024 {
+		return fmt.Sprintf("%.2f GiB", float64(bytes)/1024/1024/1024)
+	} else {
+		return fmt.Sprintf("%.2f TiB", float64(bytes)/1024/1024/1024/1024)
+	}
+}
+
 // Combine a left-aligned and a right-aligned string into one fixed-width line.
 // Takes a style which is used for formatting the left-side padding, in case
 // a uniform background is required.
