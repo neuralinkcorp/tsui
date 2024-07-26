@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -119,17 +118,18 @@ func renderMainError(err error) string {
 }
 
 func main() {
-	m, err := initialModel()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, renderMainError(err))
-		os.Exit(1)
-	}
+	fmt.Println(ui.Go())
+	// m, err := initialModel()
+	// if err != nil {
+	// 	fmt.Fprintln(os.Stderr, renderMainError(err))
+	// 	os.Exit(1)
+	// }
 
-	// Enable "alternate screen" mode, a terminal convention designed for rendering
-	// full-screen, interactive UIs.
-	p := tea.NewProgram(m, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, renderMainError(err))
-		os.Exit(1)
-	}
+	// // Enable "alternate screen" mode, a terminal convention designed for rendering
+	// // full-screen, interactive UIs.
+	// p := tea.NewProgram(m, tea.WithAltScreen())
+	// if _, err := p.Run(); err != nil {
+	// 	fmt.Fprintln(os.Stderr, renderMainError(err))
+	// 	os.Exit(1)
+	// }
 }
