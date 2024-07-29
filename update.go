@@ -8,6 +8,7 @@ import (
 	"github.com/neuralink/tsui/browser"
 	"github.com/neuralink/tsui/libts"
 	"github.com/neuralink/tsui/ui"
+	"github.com/neuralink/tsui/version"
 	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
@@ -27,6 +28,9 @@ type stateMsg libts.State
 
 // Message with ping results ready to be stored in the model.
 type pingResultsMsg map[tailcfg.StableNodeID]*ipnstate.PingResult
+
+// Message containing the latest version of tsui fetched from GitHub.
+type latestVersionMsg string
 
 // Message representing some transient error.
 type errorMsg error
@@ -81,6 +85,15 @@ func editPrefs(maskedPrefs *ipn.MaskedPrefs) tea.Msg {
 	return updateState()
 }
 
+// Command that fetches the latest version of tsui.
+func fetchLatestVersion() tea.Msg {
+	latestVersion, err := version.FetchLatestVersion()
+	if err != nil {
+		return nil
+	}
+	return latestVersionMsg(latestVersion)
+}
+
 // Bubbletea update function; our main "event" handler.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -106,13 +119,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 
-		case "left", "h":
+		case "left", "h", "a":
 			m.menu.CloseSubmenu()
-		case "up", "k":
+		case "up", "k", "w":
 			m.menu.CursorUp()
-		case "down", "j":
+		case "down", "j", "s":
 			m.menu.CursorDown()
-		case "right", "l":
+		case "right", "l", "d":
 			if !m.menu.IsSubmenuOpen() {
 				return m, m.menu.Activate()
 			}

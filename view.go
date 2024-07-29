@@ -139,25 +139,33 @@ func renderMiddleBanner(m *model, height int, text string) string {
 		divider+"\n\n"+text+"\n\n"+divider)
 }
 
-// Render the bottom status text.
-func renderStatus(m *model) string {
-	var statusPrefix string
-	var statusText string
-
+// Render the bottom status bar.
+func renderStatusBar(m *model) string {
 	if m.statusText == "" {
 		// Show up/down traffic only if we have data.
 		if m.state.BackendState != ipn.Running.String() {
 			return ""
 		}
 
-		statusText = lipgloss.NewStyle().
+		right := lipgloss.NewStyle().
 			Faint(true).
+			Render("press q to quit")
+
+		left := lipgloss.NewStyle().
+			Faint(true).
+			Width(m.terminalWidth - lipgloss.Width(right)).
+			PaddingLeft(lipgloss.Width(right)).
+			Align(lipgloss.Center).
 			Render(fmt.Sprintf(
 				"▲ %s | %s ▼",
 				ui.FormatBytes(m.state.TxBytes),
 				ui.FormatBytes(m.state.RxBytes),
 			))
+
+		return left + right
 	} else {
+		var statusPrefix string
+
 		var color lipgloss.Color
 
 		switch m.statusType {
@@ -181,15 +189,15 @@ func renderStatus(m *model) string {
 				Render("Tip! ")
 		}
 
-		statusText = lipgloss.NewStyle().
+		statusText := lipgloss.NewStyle().
 			Foreground(color).
 			Render(m.statusText)
-	}
 
-	return lipgloss.NewStyle().
-		Width(m.terminalWidth).
-		Align(lipgloss.Center).
-		Render(statusPrefix + statusText)
+		return lipgloss.NewStyle().
+			Width(m.terminalWidth).
+			Align(lipgloss.Center).
+			Render(statusPrefix + statusText)
+	}
 }
 
 // Bubbletea's main render function. Called after state updates.
@@ -207,7 +215,7 @@ func (m model) View() string {
 	top += "\n"
 
 	// Render the bottom of the page (status bar, error text, etc).
-	bottom := "\n" + renderStatus(&m)
+	bottom := "\n" + renderStatusBar(&m)
 
 	// Now, draw the middle, and make it take up the remaining space.
 	middleHeight := m.terminalHeight - lipgloss.Height(top) - lipgloss.Height(bottom)

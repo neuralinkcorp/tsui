@@ -72,6 +72,9 @@ type model struct {
 	// is updated and used to keep track of status expiration messages.
 	statusGen int
 
+	// Result of the update checker.
+	latestVersion string
+
 	// Frame counter for the loading animation. This is always running in the background,
 	// even if the animation is not visible.
 	animationT int
@@ -106,7 +109,7 @@ func (m model) Init() tea.Cmd {
 		updateState,
 		// Run an initial batch of pings.
 		makeDoPings(m.state.SortedExitNodes),
-		// And kick off our ticks.
+		// Kick off our ticks.
 		tea.Tick(tickInterval, func(_ time.Time) tea.Msg {
 			return tickMsg{}
 		}),
@@ -116,6 +119,8 @@ func (m model) Init() tea.Cmd {
 		tea.Tick(ui.PoggersAnimationInterval, func(_ time.Time) tea.Msg {
 			return animationTickMsg{}
 		}),
+		// And fetch the latest version.
+		fetchLatestVersion,
 	)
 }
 
@@ -136,7 +141,23 @@ func main() {
 	// Enable "alternate screen" mode, a terminal convention designed for rendering
 	// full-screen, interactive UIs.
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		mainError(err)
+	}
+	m = finalModel.(model)
+
+	if m.latestVersion != "" && Version != "local" && m.latestVersion != Version {
+		text := lipgloss.NewStyle().
+			Foreground(ui.Yellow).
+			Bold(true).
+			Render("Update available!")
+		text += lipgloss.NewStyle().
+			Foreground(ui.Yellow).
+			Render(fmt.Sprintf(" To upgrade tsui from %s to %s, run:", Version, m.latestVersion))
+		text += lipgloss.NewStyle().
+			Foreground(ui.Blue).
+			Render("\n    curl -sS https://tsui.neuralink.com/ | bash")
+		fmt.Println(text)
 	}
 }
