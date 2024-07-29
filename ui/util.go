@@ -13,15 +13,15 @@ func FormatDuration(duration time.Duration) string {
 	days := duration.Hours() / 24
 	months := days / 30.437 // Average days in a month, we don't need to be precise.
 
-	if months > 0 {
+	if months >= 2 {
 		months := int(math.Floor(months))
 		// It's somewhat arbitrary that months are the only one we use the full word for,
 		// but "5mo" doesn't look as aesthetically pleasing to me.
 		return fmt.Sprintf("%d Months", months)
-	} else if days > 0 {
+	} else if days >= 2 {
 		days := int(math.Floor(days))
 		return fmt.Sprintf("%dd", days)
-	} else if duration.Hours() >= 1 {
+	} else if duration.Hours() >= 2 {
 		hours := int(math.Floor(duration.Hours()))
 		return fmt.Sprintf("%dh", hours)
 	} else {
