@@ -18,10 +18,10 @@ func FormatDuration(duration time.Duration) string {
 		// It's somewhat arbitrary that months are the only one we use the full word for,
 		// but "5mo" doesn't look as aesthetically pleasing to me.
 		return fmt.Sprintf("%d Months", months)
-	} else if days >= 2 {
+	} else if days >= 1 {
 		days := int(math.Floor(days))
 		return fmt.Sprintf("%dd", days)
-	} else if duration.Hours() >= 2 {
+	} else if duration.Hours() >= 1 {
 		hours := int(math.Floor(duration.Hours()))
 		return fmt.Sprintf("%dh", hours)
 	} else {
