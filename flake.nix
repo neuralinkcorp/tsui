@@ -14,16 +14,27 @@
 
       # Nixpkgs instantiated for supported system types.
       nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
+
+      dependenciesFor = pkgs : with pkgs; []
+        ++ (lib.optionals stdenv.isLinux [
+          # For Linux clipboard support.
+          xorg.libX11.dev
+        ])
+        ++ (lib.optionals stdenv.isDarwin [
+          # For macOS clipboard support.
+          darwin.apple_sdk.frameworks.Cocoa
+        ]);
     in
     {
       # Provide some binary packages for selected system types.
       packages = forAllSystems (system:
         let
           pkgs = nixpkgsFor.${system};
+          pname = "tsui";
         in
         {
           tsui = pkgs.buildGoModule {
-            pname = "tsui";
+            inherit pname;
             inherit version;
             src = ./.;
 
@@ -41,15 +52,12 @@
             # Remember to bump this hash when your dependencies change.
             vendorHash = "sha256-758UX2EV1FKRlcTI8At16Wc6f2eUF2jSAaiMDFLax5I=";
 
-            buildInputs = with pkgs; []
-              ++ (lib.optionals stdenv.isLinux [
-                # For Linux clipboard support.
-                xorg.libX11.dev
-              ])
-              ++ (lib.optionals stdenv.isDarwin [
-                # For macOS clipboard support.
-                darwin.apple_sdk.frameworks.Cocoa
-              ]);
+            buildInputs = dependenciesFor pkgs;
+
+            # Un-Nix the build so it can dlopen() X11 outside of Nix environments.
+            preFixup = ''
+              patchelf --remove-rpath --set-interpreter /lib64/ld-linux-x86-64.so.2 $out/bin/${pname}
+            '';
           };
         });
 
@@ -61,6 +69,7 @@
         {
           default = pkgs.mkShell {
             buildInputs = with pkgs; [ go gopls gotools go-tools ];
+            nativeBuildInputs = dependenciesFor pkgs;
           };
         });
 
