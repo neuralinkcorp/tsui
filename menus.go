@@ -7,9 +7,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/neuralink/tsui/libts"
-	"github.com/neuralink/tsui/ui"
-	"golang.design/x/clipboard"
+	"github.com/neuralinkcorp/tsui/clipboard"
+	"github.com/neuralinkcorp/tsui/libts"
+	"github.com/neuralinkcorp/tsui/ui"
 	"tailscale.com/ipn"
 	"tailscale.com/types/opt"
 	"tailscale.com/types/preftype"
@@ -25,7 +25,7 @@ func (m *model) updateMenus() {
 				&ui.LabeledSubmenuItem{
 					Label: m.state.Self.DNSName[:len(m.state.Self.DNSName)-1], // Remove the trailing dot.
 					OnActivate: func() tea.Msg {
-						clipboard.Write(clipboard.FmtText, []byte(m.state.Self.DNSName[:len(m.state.Self.DNSName)-1]))
+						clipboard.WriteString([]byte(m.state.Self.DNSName[:len(m.state.Self.DNSName)-1]))
 						return successMsg("Copied full domain to clipboard.")
 					},
 				},
@@ -37,7 +37,7 @@ func (m *model) updateMenus() {
 				submenuItems = append(submenuItems, &ui.LabeledSubmenuItem{
 					Label: addr.String(),
 					OnActivate: func() tea.Msg {
-						clipboard.Write(clipboard.FmtText, []byte(addr.String()))
+						clipboard.WriteString([]byte(addr.String()))
 
 						var versionName string
 						if addr.Is4() {
@@ -57,14 +57,14 @@ func (m *model) updateMenus() {
 				&ui.LabeledSubmenuItem{
 					Label: fmt.Sprintf("ID: %s", m.state.Self.ID),
 					OnActivate: func() tea.Msg {
-						clipboard.Write(clipboard.FmtText, []byte(string(m.state.Self.ID)))
+						clipboard.WriteString([]byte(string(m.state.Self.ID)))
 						return successMsg("Copied Tailscale node ID to clipboard.")
 					},
 				},
 				&ui.LabeledSubmenuItem{
 					Label: m.state.Self.PublicKey.String(),
 					OnActivate: func() tea.Msg {
-						clipboard.Write(clipboard.FmtText, []byte(m.state.Self.PublicKey.String()))
+						clipboard.WriteString([]byte(m.state.Self.PublicKey.String()))
 						return successMsg("Copied node key to clipboard.")
 					},
 				},
@@ -82,7 +82,7 @@ func (m *model) updateMenus() {
 					&ui.LabeledSubmenuItem{
 						Label: m.state.LockKey.CLIString(),
 						OnActivate: func() tea.Msg {
-							clipboard.Write(clipboard.FmtText, []byte(m.state.LockKey.CLIString()))
+							clipboard.WriteString([]byte(m.state.LockKey.CLIString()))
 							return successMsg("Copied tailnet lock key to clipboard.")
 						},
 					},

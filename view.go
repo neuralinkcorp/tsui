@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/neuralink/tsui/browser"
-	"github.com/neuralink/tsui/ui"
+	"github.com/neuralinkcorp/tsui/browser"
+	"github.com/neuralinkcorp/tsui/ui"
 	"tailscale.com/ipn"
 )
 
