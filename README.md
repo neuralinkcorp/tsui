@@ -1,6 +1,6 @@
 # tsui
 
-An elegant TUI for configuring [Tailscale](https://tailscale.com/).
+An (experimental) elegant TUI for configuring [Tailscale](https://tailscale.com/).
 
 We built this because, while Tailscale has lovely desktop apps for macOS and Windows, Linux users are stuck configuring Tailscale with CLI commands. Some of tsui's features are:
 
@@ -10,7 +10,7 @@ We built this because, while Tailscale has lovely desktop apps for macOS and Win
 - See your bandwidth
 - Easily log in, out, and reauthenticate
 
-<img width="1039" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/9768a858-027a-431b-a5e2-39457d508648">
+<img width="982" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/5811ae2a-774d-423b-9176-cddbe5e29e0a">
 
 ## Installation
 
