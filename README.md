@@ -10,6 +10,12 @@ We built this because, while Tailscale has lovely desktop apps for macOS and Win
 - See your bandwidth
 - Easily log in, out, and reauthenticate
 
+Some things we want to add in the future:
+
+- Multiple accounts and custom login URLs
+- Better behavior on small terminals
+- A menu of all accessible network devices
+
 <img width="982" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/d95952bb-fc67-4147-8be0-d399c374923f">
 
 ## Installation
