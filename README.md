@@ -10,13 +10,13 @@ We built this because, while Tailscale has lovely desktop apps for macOS and Win
 - See your bandwidth
 - Easily log in, out, and reauthenticate
 
-We support tsui on macOS and Linux, x86_64 and aarch64.
-
 <img width="1039" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/9768a858-027a-431b-a5e2-39457d508648">
 
 ## Installation
 
-Run our install script:
+We support tsui on macOS and Linux, both x86_64 and aarch64 architectures.
+
+Run our installer:
 
 ```sh
 curl -sS https://tsui.neuralink.com/install | bash
