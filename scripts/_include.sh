@@ -14,7 +14,7 @@ function clean_artifacts {
 # Usage: build_macos <nix_platform> <tsui_platform>
 function build_macos {
   echo "🔨 Building: $2..."
-  nix build ".#defaultPackage.$1"
+  nix build "#defaultPackage.$1"
   cp ./result/bin/tsui "$artifacts_dir/tsui-$2"
 }
 
@@ -41,7 +41,7 @@ function docker_build_linux {
     -v "$repo:/opt/tsui" \
     --workdir /opt/tsui \
     "$name" \
-    nix build ".#defaultPackage.$2"
+    nix build "#defaultPackage.$2"
   
   docker cp \
     "$name:/opt/tsui/result/bin/tsui" \
