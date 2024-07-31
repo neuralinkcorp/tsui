@@ -44,8 +44,7 @@ func WriteString(str string) error {
 		}
 	}()
 
-	s := <-status
-	if s != 0 {
+	if <-status != 0 {
 		return errUnavailable
 	}
 
