@@ -41,6 +41,12 @@
             inherit version;
             src = ./.;
 
+            # Possibly works around sporadic "signal: illegal instruction" error when
+            # cross-compiling with macOS Rosetta.
+            preBuild = if pkgs.stdenv.isLinux && pkgs.stdenv.isx86_64 then ''
+              export GODEBUG=asyncpreemptoff=1
+            '' else null;
+
             # Inject the version info in the binary.
             ldflags = [
               "-X main.Version=${version}"
