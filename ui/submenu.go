@@ -77,9 +77,15 @@ func (item *LabeledSubmenuItem) render(isSelected bool, isSubmenuOpen bool) stri
 
 	if isSubmenuOpen {
 		if isSelected {
-			colorStyle = colorStyle.
-				Background(Secondary).
-				Foreground(Black)
+			if item.Variant == SubmenuItemVariantDanger {
+				colorStyle = colorStyle.
+					Background(Red).
+					Foreground(Black)
+			} else {
+				colorStyle = colorStyle.
+					Background(Secondary).
+					Foreground(Black)
+			}
 		} else if item.IsDim {
 			colorStyle = colorStyle.
 				Faint(true)
