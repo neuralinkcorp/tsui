@@ -141,52 +141,37 @@ func renderMiddleBanner(m *model, height int, text string) string {
 
 // Render the bottom status bar.
 func renderStatusBar(m *model) string {
+	var text string
+
 	if m.statusText == "" && m.canWrite {
-		// Show up/down traffic only if we have data.
-		if m.state.BackendState != ipn.Running.String() {
-			return ""
+		// Only show up/down if we have data.
+		if m.state.BackendState == ipn.Running.String() {
+			text = ""
+		} else {
+			text = lipgloss.NewStyle().
+				Faint(true).
+				Render(fmt.Sprintf(
+					"▲ %s | %s ▼",
+					ui.FormatBytes(m.state.TxBytes),
+					ui.FormatBytes(m.state.RxBytes),
+				))
 		}
-
-		right := lipgloss.NewStyle().
-			Faint(true).
-			Render("press q to quit")
-
-		left := lipgloss.NewStyle().
-			Faint(true).
-			Width(m.terminalWidth - lipgloss.Width(right)).
-			PaddingLeft(lipgloss.Width(right)).
-			Align(lipgloss.Center).
-			Render(fmt.Sprintf(
-				"▲ %s | %s ▼",
-				ui.FormatBytes(m.state.TxBytes),
-				ui.FormatBytes(m.state.RxBytes),
-			))
-
-		return left + right
 	} else if m.statusText == "" && !m.canWrite {
-		text := lipgloss.NewStyle().
+		text = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(ui.Yellow).
 			Render("Read-only mode.")
 		text += lipgloss.NewStyle().
 			Foreground(ui.Yellow).
 			Render(" To edit preferences, you may have to run tsui as root.")
-
-		return lipgloss.NewStyle().
-			Width(m.terminalWidth).
-			Align(lipgloss.Center).
-			Foreground(ui.Yellow).
-			Render(text)
 	} else {
-		var statusPrefix string
-
 		var color lipgloss.Color
 
 		switch m.statusType {
 		case statusTypeError:
 			color = ui.Red
 
-			statusPrefix = lipgloss.NewStyle().
+			text = lipgloss.NewStyle().
 				Foreground(color).
 				Bold(true).
 				Render("Error: ")
@@ -197,21 +182,28 @@ func renderStatusBar(m *model) string {
 		case statusTypeTip:
 			color = ui.Blue
 
-			statusPrefix = lipgloss.NewStyle().
+			text = lipgloss.NewStyle().
 				Foreground(color).
 				Bold(true).
 				Render("Tip! ")
 		}
 
-		statusText := lipgloss.NewStyle().
+		text += lipgloss.NewStyle().
 			Foreground(color).
 			Render(m.statusText)
-
-		return lipgloss.NewStyle().
-			Width(m.terminalWidth).
-			Align(lipgloss.Center).
-			Render(statusPrefix + statusText)
 	}
+
+	right := lipgloss.NewStyle().
+		Faint(true).
+		Render("press q to quit")
+
+	left := lipgloss.NewStyle().
+		Width(m.terminalWidth - lipgloss.Width(right)).
+		PaddingLeft(lipgloss.Width(right)).
+		Align(lipgloss.Center).
+		Render(text)
+
+	return left + right
 }
 
 // Bubbletea's main render function. Called after state updates.
