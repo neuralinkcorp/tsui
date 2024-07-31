@@ -10,7 +10,7 @@ We built this because, while Tailscale has lovely desktop apps for macOS and Win
 - See your bandwidth
 - Easily log in, out, and reauthenticate
 
-<img width="982" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/c9e3cb89-9723-4fdf-8ff1-cdc52117806a">
+<img width="982" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/d95952bb-fc67-4147-8be0-d399c374923f">
 
 ## Installation
 
