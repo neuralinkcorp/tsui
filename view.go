@@ -195,7 +195,7 @@ func renderStatusBar(m *model) string {
 
 	right := lipgloss.NewStyle().
 		Faint(true).
-		Render("q to quit")
+		Render("press q to quit")
 
 	left := lipgloss.NewStyle().
 		Width(m.terminalWidth - lipgloss.Width(right)).
