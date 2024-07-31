@@ -18,6 +18,9 @@ case $(uname -ms) in
 'Linux x86_64')
   target=linux-x64
   ;;
+'Linux aarch64' | 'Linux arm64')
+  target=linux-arm64
+  ;;
 *)
   echo "😦 Sorry, we don't have binaries for your platform: '$(uname -ms)'"
   echo "   You can build from source or submit an issue at $repo_url/issues"

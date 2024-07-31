@@ -4,7 +4,7 @@
 #import <Cocoa/Cocoa.h>
 
 // Synchronously writes `n` bytes from `buf` to the clipboard.
-int write_string(const void *buf, NSInteger n) {
+int writeString(const void *buf, NSInteger n) {
 	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 	NSData *data = [NSData dataWithBytes: buf length: n];
 	[pasteboard clearContents];

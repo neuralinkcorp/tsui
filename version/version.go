@@ -7,7 +7,10 @@ import (
 	"strings"
 )
 
-const githubRepo = "neuralinkcorp/tsui"
+const (
+	UpdateCommand = "curl -sS https://tsui.neuralink.com/install | bash"
+	GithubRepo    = "neuralinkcorp/tsui"
+)
 
 type githubRelease struct {
 	TagName string `json:"tag_name"`
@@ -15,7 +18,7 @@ type githubRelease struct {
 
 // Fetches the latest version of tsui from GitHub releases.
 func FetchLatestVersion() (string, error) {
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", githubRepo))
+	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", GithubRepo))
 	if err != nil {
 		return "", err
 	}

@@ -29,3 +29,4 @@ go.work.sum
 # Build output
 result
 tsui
+artifacts

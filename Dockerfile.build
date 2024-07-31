@@ -1,0 +1,9 @@
+# Dockerfile for building for Linux targets.
+
+FROM nixos/nix:2.21.4
+
+RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+
+# Required to work around "unable to load seccomp BPF program: Invalid argument" error\
+# when building for x86_64 Linux.
+RUN echo "filter-syscalls = false" >> /etc/nix/nix.conf

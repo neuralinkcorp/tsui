@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/neuralinkcorp/tsui/libts"
 	"github.com/neuralinkcorp/tsui/ui"
+	"github.com/neuralinkcorp/tsui/version"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
 )
@@ -157,7 +158,7 @@ func main() {
 			Render(fmt.Sprintf(" To upgrade tsui from %s to %s, run:", Version, m.latestVersion))
 		text += lipgloss.NewStyle().
 			Foreground(ui.Blue).
-			Render("\n    curl -sS https://tsui.neuralink.com/ | bash")
+			Render("\n    " + version.UpdateCommand)
 		fmt.Println(text)
 	}
 }

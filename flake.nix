@@ -4,7 +4,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.0.2";
+      version = "0.0.3";
 
       # System types to support.
       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
@@ -31,6 +31,9 @@
         let
           pkgs = nixpkgsFor.${system};
           pname = "tsui";
+
+          # aarch64 or x86-64
+          dashedCpuType = builtins.replaceStrings ["_"] ["-"] pkgs.stdenv.hostPlatform.parsed.cpu.name;
         in
         {
           tsui = pkgs.buildGoModule {
@@ -55,9 +58,9 @@
             buildInputs = dependenciesFor pkgs;
 
             # Un-Nix the build so it can dlopen() X11 outside of Nix environments.
-            preFixup = ''
-              patchelf --remove-rpath --set-interpreter /lib64/ld-linux-x86-64.so.2 $out/bin/${pname}
-            '';
+            preFixup = if pkgs.stdenv.isLinux then ''
+              patchelf --remove-rpath --set-interpreter /lib64/ld-linux-${dashedCpuType}.so.2 $out/bin/${pname}
+            '' else null;
           };
         });
 
