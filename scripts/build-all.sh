@@ -12,9 +12,9 @@ fi
 
 clean_artifacts
 build_macos aarch64-darwin macos-aarch64
-build_macos aarch64-darwin macos-x86_64
+build_macos x86_64-darwin macos-x86_64
 echo
-docker_build_linux linux/arm64 aarch64-linux linux-arm64
+docker_build_linux linux/arm64 aarch64-linux linux-aarch64
 echo
 docker_build_linux linux/amd64 x86_64-linux linux-x86_64
 echo
