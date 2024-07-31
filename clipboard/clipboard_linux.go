@@ -3,11 +3,10 @@ package clipboard
 /*
 #cgo LDFLAGS: -ldl
 #include <stdlib.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-int clipboard_write(
+int writeString(
 	unsigned char* buf,
 	size_t         n,
 	uintptr_t      handle
@@ -22,13 +21,13 @@ import (
 	"unsafe"
 )
 
-var (
-	lock = sync.Mutex{}
-)
+var lock = sync.Mutex{}
 
-func WriteString(buf []byte) error {
+func WriteString(str string) error {
 	lock.Lock()
 	defer lock.Unlock()
+
+	buf := []byte(str)
 
 	status := make(chan int)
 
@@ -39,25 +38,26 @@ func WriteString(buf []byte) error {
 		statusHandle := cgo.NewHandle(status)
 
 		if len(buf) == 0 {
-			C.clipboard_write(nil, 0, C.uintptr_t(statusHandle))
+			C.writeString(nil, 0, C.uintptr_t(statusHandle))
 		} else {
-			C.clipboard_write((*C.uchar)(unsafe.Pointer(&(buf[0]))), C.size_t(len(buf)), C.uintptr_t(statusHandle))
+			C.writeString((*C.uchar)(unsafe.Pointer(&(buf[0]))), C.size_t(len(buf)), C.uintptr_t(statusHandle))
 		}
 	}()
 
-	if <-status < 0 {
+	s := <-status
+	if s != 0 {
 		return errUnavailable
 	}
 
 	return nil
 }
 
-// Accessed on the C side to update the status channel, because the clipboard operation
-// on Linux is asynchronous.
+// Called from C to update the status channel. Must only be called once per handle,
+// because it deletes the handle.
 //
-//export sync_status
-func syncStatus(statusHandle uintptr, value int) {
+//export sendStatus
+func sendStatus(statusHandle C.uintptr_t, value C.int) {
 	status := cgo.Handle(statusHandle).Value().(chan int)
-	status <- value
+	status <- int(value)
 	cgo.Handle(statusHandle).Delete()
 }

@@ -25,7 +25,10 @@ func (m *model) updateMenus() {
 				&ui.LabeledSubmenuItem{
 					Label: m.state.Self.DNSName[:len(m.state.Self.DNSName)-1], // Remove the trailing dot.
 					OnActivate: func() tea.Msg {
-						clipboard.WriteString([]byte(m.state.Self.DNSName[:len(m.state.Self.DNSName)-1]))
+						err := clipboard.WriteString(m.state.Self.DNSName[:len(m.state.Self.DNSName)-1])
+						if err != nil {
+							return errorMsg(err)
+						}
 						return successMsg("Copied full domain to clipboard.")
 					},
 				},
@@ -37,7 +40,10 @@ func (m *model) updateMenus() {
 				submenuItems = append(submenuItems, &ui.LabeledSubmenuItem{
 					Label: addr.String(),
 					OnActivate: func() tea.Msg {
-						clipboard.WriteString([]byte(addr.String()))
+						err := clipboard.WriteString(addr.String())
+						if err != nil {
+							return errorMsg(err)
+						}
 
 						var versionName string
 						if addr.Is4() {
@@ -57,14 +63,20 @@ func (m *model) updateMenus() {
 				&ui.LabeledSubmenuItem{
 					Label: fmt.Sprintf("ID: %s", m.state.Self.ID),
 					OnActivate: func() tea.Msg {
-						clipboard.WriteString([]byte(string(m.state.Self.ID)))
+						err := clipboard.WriteString(string(m.state.Self.ID))
+						if err != nil {
+							return errorMsg(err)
+						}
 						return successMsg("Copied Tailscale node ID to clipboard.")
 					},
 				},
 				&ui.LabeledSubmenuItem{
 					Label: m.state.Self.PublicKey.String(),
 					OnActivate: func() tea.Msg {
-						clipboard.WriteString([]byte(m.state.Self.PublicKey.String()))
+						err := clipboard.WriteString(m.state.Self.PublicKey.String())
+						if err != nil {
+							return errorMsg(err)
+						}
 						return successMsg("Copied node key to clipboard.")
 					},
 				},
@@ -82,7 +94,10 @@ func (m *model) updateMenus() {
 					&ui.LabeledSubmenuItem{
 						Label: m.state.LockKey.CLIString(),
 						OnActivate: func() tea.Msg {
-							clipboard.WriteString([]byte(m.state.LockKey.CLIString()))
+							err := clipboard.WriteString(m.state.LockKey.CLIString())
+							if err != nil {
+								return errorMsg(err)
+							}
 							return successMsg("Copied tailnet lock key to clipboard.")
 						},
 					},

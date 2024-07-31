@@ -6,7 +6,7 @@ package clipboard
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
 
-int write_string(const void *buf, NSInteger n);
+int writeString(const void *buf, NSInteger n);
 */
 import "C"
 
@@ -17,16 +17,18 @@ import (
 
 var lock = sync.Mutex{}
 
-func WriteString(buf []byte) error {
+func WriteString(str string) error {
 	lock.Lock()
 	defer lock.Unlock()
+
+	buf := []byte(str)
 
 	var ok C.int
 
 	if len(buf) == 0 {
-		ok = C.write_string(unsafe.Pointer(nil), 0)
+		ok = C.writeString(unsafe.Pointer(nil), 0)
 	} else {
-		ok = C.write_string(unsafe.Pointer(&buf[0]), C.NSInteger(len(buf)))
+		ok = C.writeString(unsafe.Pointer(&buf[0]), C.NSInteger(len(buf)))
 	}
 
 	if ok != 0 {
