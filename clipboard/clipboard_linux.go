@@ -9,7 +9,7 @@ package clipboard
 int writeString(
 	unsigned char* buf,
 	size_t         n,
-	uintptr_t      handle
+	uintptr_t      statusHandle
 );
 */
 import "C"
