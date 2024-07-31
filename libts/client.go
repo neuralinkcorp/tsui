@@ -54,6 +54,13 @@ func EditPrefs(ctx context.Context, maskedPrefs *ipn.MaskedPrefs) error {
 	return err
 }
 
+// Returns true if the user has write permissions to the Tailscale config.
+// If false, the user may have to run tsui with sudo.
+func CanWrite(ctx context.Context) bool {
+	err := EditPrefs(ctx, &ipn.MaskedPrefs{})
+	return err == nil
+}
+
 // Return the tailnet lock status of the current node.
 func LockStatus(ctx context.Context) (*ipnstate.NetworkLockStatus, error) {
 	return ts.NetworkLockStatus(ctx)
@@ -61,23 +68,22 @@ func LockStatus(ctx context.Context) (*ipnstate.NetworkLockStatus, error) {
 
 // Start the Tailscale daemon.
 func Up(ctx context.Context) error {
-	return setWantRunning(ctx, true)
+	return EditPrefs(ctx, &ipn.MaskedPrefs{
+		Prefs: ipn.Prefs{
+			WantRunning: true,
+		},
+		WantRunningSet: true,
+	})
 }
 
 // Stop the Tailscale daemon.
 func Down(ctx context.Context) error {
-	return setWantRunning(ctx, false)
-}
-
-// Start or stop the Tailscale daemon, if we already have a socket connection.
-func setWantRunning(ctx context.Context, wantRunning bool) error {
-	_, err := ts.EditPrefs(ctx, &ipn.MaskedPrefs{
+	return EditPrefs(ctx, &ipn.MaskedPrefs{
 		Prefs: ipn.Prefs{
-			WantRunning: wantRunning,
+			WantRunning: false,
 		},
 		WantRunningSet: true,
 	})
-	return err
 }
 
 // Set the exit node to the given peer, or clear the exit node if peer is nil.

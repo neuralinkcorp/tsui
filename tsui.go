@@ -53,6 +53,8 @@ type model struct {
 	state libts.State
 	// Ping results per peer.
 	pings map[tailcfg.StableNodeID]*ipnstate.PingResult
+	// Whether the user has write permissions to the Tailscale config.
+	canWrite bool
 
 	// Main menu.
 	menu       ui.Appmenu
@@ -97,6 +99,7 @@ func initialModel() (model, error) {
 		return m, err
 	}
 
+	m.canWrite = libts.CanWrite(ctx)
 	m.state = state
 	m.updateMenus()
 

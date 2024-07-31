@@ -141,7 +141,7 @@ func renderMiddleBanner(m *model, height int, text string) string {
 
 // Render the bottom status bar.
 func renderStatusBar(m *model) string {
-	if m.statusText == "" {
+	if m.statusText == "" && m.canWrite {
 		// Show up/down traffic only if we have data.
 		if m.state.BackendState != ipn.Running.String() {
 			return ""
@@ -163,6 +163,20 @@ func renderStatusBar(m *model) string {
 			))
 
 		return left + right
+	} else if m.statusText == "" && !m.canWrite {
+		text := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(ui.Yellow).
+			Render("Read-only mode.")
+		text += lipgloss.NewStyle().
+			Foreground(ui.Yellow).
+			Render(" To edit preferences, you may have to run tsui as root.")
+
+		return lipgloss.NewStyle().
+			Width(m.terminalWidth).
+			Align(lipgloss.Center).
+			Foreground(ui.Yellow).
+			Render(text)
 	} else {
 		var statusPrefix string
 
