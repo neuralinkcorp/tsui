@@ -41,13 +41,13 @@ void writeString(unsigned char *buf, size_t n, uintptr_t statusHandle)
     // Create an invisible window to use as an agent for clipboard operations.
     Window window = XCreateSimpleWindow(display, XDefaultRootWindow(display), 0, 0, 1, 1, 0, 0, 0);
 
-    Atom sel = XInternAtom(display, "CLIPBOARD", false);
-    Atom utf8 = XInternAtom(display, "UTF8_STRING", false);
-    Atom targets_atom = XInternAtom(display, "TARGETS", false);
+    Atom clipboardAtom = XInternAtom(display, "CLIPBOARD", false);
+    Atom utf8Atom = XInternAtom(display, "UTF8_STRING", false);
+    Atom targetsAtom = XInternAtom(display, "TARGETS", false);
 
     // Set our window as the owner of the clipboard.
-    XSetSelectionOwner(display, sel, window, CurrentTime);
-    if (XGetSelectionOwner(display, sel) != window)
+    XSetSelectionOwner(display, clipboardAtom, window, CurrentTime);
+    if (XGetSelectionOwner(display, clipboardAtom) != window)
     {
         // We couldn't set ourself as the owner.
         XCloseDisplay(display);
@@ -72,7 +72,7 @@ void writeString(unsigned char *buf, size_t n, uintptr_t statusHandle)
         case SelectionRequest:
             XSelectionRequestEvent *xsr = &event.xselectionrequest;
 
-            if (xsr->selection != sel)
+            if (xsr->selection != clipboardAtom)
             {
                 // Not for us.
                 break;
@@ -89,17 +89,17 @@ void writeString(unsigned char *buf, size_t n, uintptr_t statusHandle)
             ev.target = xsr->target;
             ev.property = xsr->property;
 
-            if (ev.target == utf8)
+            if (ev.target == utf8Atom)
             {
                 // Reply with our string.
                 error = XChangeProperty(ev.display, ev.requestor, ev.property,
-                                        utf8, 8, PropModeReplace,
+                                        utf8Atom, 8, PropModeReplace,
                                         buf, n);
             }
-            else if (ev.target == targets_atom)
+            else if (ev.target == targetsAtom)
             {
                 // Reply with the targets we support (only UTF-8).
-                Atom targets[] = {utf8};
+                Atom targets[] = {utf8Atom};
                 error = XChangeProperty(ev.display, ev.requestor, ev.property,
                                         XA_ATOM, 32, PropModeReplace,
                                         (unsigned char *)&targets, sizeof(targets) / sizeof(Atom));
