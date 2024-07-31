@@ -88,45 +88,56 @@ func renderHeader(m *model) string {
 		MarginRight(4).
 		Render(ui.Logo)
 
-	status := "Status: "
-	status += renderStatusButton(m.state.BackendState, m.state.CurrentExitNode != nil)
-	if m.state.BackendState == ipn.Running.String() {
-		status += lipgloss.NewStyle().
-			Faint(true).
-			PaddingLeft(1).
-			Render("(press . to disconnect)")
-	}
-	status += "\n"
+	var statusStr string
+	{
+		var status strings.Builder
+		status.WriteString("Status: ")
+		status.WriteString(renderStatusButton(m.state.BackendState, m.state.CurrentExitNode != nil))
+		if m.state.BackendState == ipn.Running.String() {
+			status.WriteString(lipgloss.NewStyle().
+				Faint(true).
+				PaddingLeft(1).
+				Render("(press . to disconnect)"))
+		}
+		status.WriteByte('\n')
 
-	// Extra info; either auth URL or user login name, depending on the backend state.
-	if m.state.User == nil || m.state.User.LoginName == "" {
-		status += lipgloss.NewStyle().
-			Faint(true).
-			Render("--")
-	} else {
-		status += lipgloss.NewStyle().
-			Faint(true).
-			Render(m.state.User.LoginName)
+		// Extra info; either auth URL or user login name, depending on the backend state.
+		if m.state.User == nil || m.state.User.LoginName == "" {
+			status.WriteString(lipgloss.NewStyle().
+				Faint(true).
+				Render("--"))
+		} else {
+			status.WriteString(lipgloss.NewStyle().
+				Faint(true).
+				Render(m.state.User.LoginName))
+		}
+
+		statusStr = status.String()
 	}
 
-	// App versions.
-	versions := "tsui:      " + Version + "\n"
-	versions += "tailscale: "
-	if m.state.TSVersion != "" {
-		versions += m.state.TSVersion
-	} else {
-		versions += "(not connected)"
+	var versionsStr string
+	{
+		// App versions.
+		var versions strings.Builder
+		versions.WriteString("tsui:      " + Version + "\n")
+		versions.WriteString("tailscale: ")
+		if m.state.TSVersion != "" {
+			versions.WriteString(m.state.TSVersion)
+		} else {
+			versions.WriteString("(not connected)")
+		}
+
+		versionsStr = lipgloss.NewStyle().
+			Faint(true).
+			Render(versions.String())
 	}
-	versions = lipgloss.NewStyle().
-		Faint(true).
-		Render(versions)
 
 	// Spacer between the left content and the right content.
 	spacer := lipgloss.NewStyle().
-		Width(m.terminalWidth - lipgloss.Width(versions) - lipgloss.Width(status) - lipgloss.Width(logo)).
+		Width(m.terminalWidth - lipgloss.Width(versionsStr) - lipgloss.Width(statusStr) - lipgloss.Width(logo)).
 		Render(" ")
 
-	return lipgloss.JoinHorizontal(lipgloss.Center, logo, status, spacer, versions)
+	return lipgloss.JoinHorizontal(lipgloss.Center, logo, statusStr, spacer, versionsStr)
 }
 
 // Render a banner/modal for the middle of the screen.
@@ -143,20 +154,17 @@ func renderMiddleBanner(m *model, height int, text string) string {
 func renderStatusBar(m *model) string {
 	var text string
 
-	if m.statusText == "" && m.canWrite {
-		// Only show up/down if we have data.
-		if m.state.BackendState == ipn.Running.String() {
-			text = ""
-		} else {
-			text = lipgloss.NewStyle().
-				Faint(true).
-				Render(fmt.Sprintf(
-					"▲ %s | %s ▼",
-					ui.FormatBytes(m.state.TxBytes),
-					ui.FormatBytes(m.state.RxBytes),
-				))
-		}
+	if m.statusText == "" && m.canWrite && m.state.BackendState == ipn.Running.String() {
+		// If there's no other status, we're running, and we have write access, show up/down.
+		text = lipgloss.NewStyle().
+			Faint(true).
+			Render(fmt.Sprintf(
+				"▲ %s | %s ▼",
+				ui.FormatBytes(m.state.TxBytes),
+				ui.FormatBytes(m.state.RxBytes),
+			))
 	} else if m.statusText == "" && !m.canWrite {
+		// If there's no other status and we don't have write access, show a read-only warning.
 		text = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(ui.Yellow).
@@ -164,7 +172,8 @@ func renderStatusBar(m *model) string {
 		text += lipgloss.NewStyle().
 			Foreground(ui.Yellow).
 			Render(" To edit preferences, you may have to run tsui as root.")
-	} else {
+	} else if m.statusText != "" {
+		// Otherwise, there's a status message, so render it.
 		var color lipgloss.Color
 
 		switch m.statusType {

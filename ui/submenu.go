@@ -2,6 +2,7 @@ package ui
 
 import (
 	"slices"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -378,14 +379,14 @@ type Submenu struct {
 
 // Render the submenu to a string.
 func (submenu *Submenu) Render(isSubmenuOpen bool) string {
-	s := ""
+	var s strings.Builder
 	for i, item := range submenu.items {
 		if i > 0 {
-			s += "\n"
+			s.WriteByte('\n')
 		}
-		s += item.render(i == submenu.cursor && item.isSelectable(), isSubmenuOpen)
+		s.WriteString(item.render(i == submenu.cursor && item.isSelectable(), isSubmenuOpen))
 	}
-	return s
+	return s.String()
 }
 
 // Move the cursor to the next selectable item.

@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -65,19 +67,19 @@ func (appmenu *Appmenu) Render() string {
 		return ""
 	}
 
-	s := ""
+	var s strings.Builder
 
 	for i, item := range appmenu.items {
 		if i > 0 {
-			s += "\n"
+			s.WriteByte('\n')
 		}
-		s += item.render(i == appmenu.cursor, appmenu.isOpen)
+		s.WriteString(item.render(i == appmenu.cursor, appmenu.isOpen))
 	}
 
 	// Render the submenu to the right of the appmenu.
-	s = lipgloss.JoinHorizontal(lipgloss.Top, s, appmenu.items[appmenu.cursor].Submenu.Render(appmenu.isOpen))
-
-	return s
+	return lipgloss.JoinHorizontal(lipgloss.Top,
+		s.String(),
+		appmenu.items[appmenu.cursor].Submenu.Render(appmenu.isOpen))
 }
 
 // Move the cursor to the next selectable item in the currently active menu.

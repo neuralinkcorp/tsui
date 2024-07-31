@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -30,13 +31,13 @@ const PoggersAnimationInterval = 80 * time.Millisecond
 
 // Render a frame of the cool loading animation I designed.
 func PoggersAnimationFrame(t int) string {
-	frame := ""
+	var frame strings.Builder
 
 	targetLetter := targetLetters[(t/animWidth)%len(targetLetters)]
 
 	for y := 0; y < animHeight; y++ {
 		if y > 0 {
-			frame += "\n"
+			frame.WriteByte('\n')
 		}
 
 		// Line equation determined by bruteforce.
@@ -65,9 +66,9 @@ func PoggersAnimationFrame(t int) string {
 				}
 			}
 
-			frame += style.Render(string(char))
+			frame.WriteString(style.Render(string(char)))
 		}
 	}
 
-	return frame
+	return frame.String()
 }
