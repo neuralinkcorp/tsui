@@ -159,9 +159,9 @@ func renderStatusBar(m *model) string {
 		text = lipgloss.NewStyle().
 			Faint(true).
 			Render(fmt.Sprintf(
-				"▲ %s | %s ▼",
-				ui.FormatBytes(m.state.TxBytes),
+				"▼ %s | %s ▲",
 				ui.FormatBytes(m.state.RxBytes),
+				ui.FormatBytes(m.state.TxBytes),
 			))
 	} else if m.statusText == "" && !m.canWrite {
 		// If there's no other status and we don't have write access, show a read-only warning.
