@@ -30,6 +30,12 @@ curl -fsSL https://neuralink.com/tsui/install.sh | bash
 
 You can also download the latest tsui release from the [releases page](https://github.com/neuralinkcorp/tsui/releases/latest). We distribute tsui as a single binary that shouldn't require any dependencies.
 
+Once installed, you can run tsui:
+
+```sh
+tsui
+```
+
 ## Development
 
 There are a couple ways to develop and build tsui, depending on what exactly your goals are.
