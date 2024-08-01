@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	UpdateCommand = "curl -sS https://tsui.neuralink.com/install | bash"
+	UpdateCommand = "curl -fsSL https://neuralink.com/tsui/install.sh | bash"
 	GithubRepo    = "neuralinkcorp/tsui"
 )
 

@@ -25,7 +25,7 @@ We support tsui on macOS and Linux, both x86_64 and aarch64 architectures.
 Run our installer:
 
 ```sh
-curl -sS https://tsui.neuralink.com/install | bash
+curl -fsSL https://neuralink.com/tsui/install.sh | bash
 ```
 
 You can also download the latest tsui release from the [releases page](https://github.com/neuralinkcorp/tsui/releases/latest). We distribute tsui as a single binary that shouldn't require any dependencies.

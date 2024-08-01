@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Future installation script for when this repository is public.
+# Redirects from https://neuralink.com/tsui/install.sh
 
 set -eu
 
