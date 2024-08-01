@@ -16,7 +16,7 @@ case $(uname -ms) in
   target=macos-aarch64
   ;;
 'Linux x86_64')
-  target=linux-x64
+  target=linux-x86_64
   ;;
 'Linux aarch64' | 'Linux arm64')
   target=linux-aarch64
