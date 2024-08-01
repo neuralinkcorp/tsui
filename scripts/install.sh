@@ -19,7 +19,7 @@ case $(uname -ms) in
   target=linux-x64
   ;;
 'Linux aarch64' | 'Linux arm64')
-  target=linux-arm64
+  target=linux-aarch64
   ;;
 *)
   echo "😦 Sorry, we don't have binaries for your platform: '$(uname -ms)'"
