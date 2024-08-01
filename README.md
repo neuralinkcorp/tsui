@@ -22,7 +22,7 @@ Some things we want to add in the future:
 
 We support tsui on macOS and Linux, both x86_64 and aarch64 architectures.
 
-Run our installer:
+Run the installer:
 
 ```sh
 curl -fsSL https://neuralink.com/tsui/install.sh | bash

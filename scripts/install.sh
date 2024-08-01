@@ -37,7 +37,7 @@ else
 fi
 
 sudo curl --fail --location --progress-bar --output "$install_path" "$download_url" ||
-  (echo "🚨 Failed to download tsui from '$download_url'" &&
+   (echo "🚨 Failed to download tsui from '$download_url'" &&
     echo "   You can download the latest release yourself from $repo_url/releases/latest" &&
     exit 1)
 
