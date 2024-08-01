@@ -16,7 +16,7 @@ Some things we want to add in the future:
 - Better behavior on small terminals
 - A menu of all accessible network devices
 
-<img width="982" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/d95952bb-fc67-4147-8be0-d399c374923f">
+<img width="1037" alt="Screenshot of tsui" src="https://github.com/user-attachments/assets/5593f8be-d2ab-4f64-ac79-0c285e018b68">
 
 ## Installation
 
