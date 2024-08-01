@@ -30,10 +30,10 @@ esac
 
 if [[ $# = 0 ]]; then
   echo "📦 Downloading latest tsui release to $install_path"
-  download_url=$repo_url/releases/latest/download/tsui-$target.zip
+  download_url=$repo_url/releases/latest/download/tsui-$target
 else
   echo "🛠️  Downloading specified tsui version (v$1) to $install_path"
-  download_url=$repo_url/releases/download/v$1/tsui-$target.zip
+  download_url=$repo_url/releases/download/v$1/tsui-$target
 fi
 
 sudo curl --fail --location --progress-bar --output "$install_path" "$download_url" ||
