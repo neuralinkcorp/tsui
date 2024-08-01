@@ -70,7 +70,7 @@ nix build
 
 ### With Go
 
-If you want to use Nix, you can still build with the Go toolchain. you will need Go installed and, on Linux, `libx11-dev`. On macOS, you may also need the XCode command line tools.
+If you want to use Nix, you can still build with the Go toolchain. You will need Go installed and, on Linux, `libx11-dev`. On macOS, you may also need the XCode command line tools.
 
 Develop:
 
