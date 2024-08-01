@@ -225,6 +225,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pings = msg
 		m.updateMenus()
 
+	// When we get our latest version, just store it for (potential) display on exit.
+	case latestVersionMsg:
+		m.latestVersion = string(msg)
+
 	// Display status bar notices.
 	case errorMsg, successMsg, tipMsg:
 		var lifetime time.Duration
