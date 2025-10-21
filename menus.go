@@ -250,13 +250,45 @@ func (m *model) updateMenus() {
 				exitNode = "Exit Node"
 			}
 
-			accountTitle := "Account"
+			accountsTitle := "Accounts"
 			reauthenticateButtonLabel := "[Reauthenticate]"
 			if m.state.Self.KeyExpiry != nil {
 				reauthenticateButtonLabel = "[Reauthenticate Now]"
 
 				duration := time.Until(*m.state.Self.KeyExpiry)
-				accountTitle += " - Key Expires in " + ui.FormatDuration(duration)
+				accountsTitle += " - Current Key Expires in " + ui.FormatDuration(duration)
+			}
+
+			profiles, err := libts.ListProfiles(ctx)
+			var profilesItems []ui.SubmenuItem
+			if err != nil {
+				profilesItems = []ui.SubmenuItem{
+					&ui.LabeledSubmenuItem{
+						Label: "Failed to load accounts list, try run tsui as sudo.",
+					},
+				}
+			} else {
+				// Create a submenu item for each profile
+				for _, profile := range profiles {
+					// Highlight the current profile
+					variant := ui.SubmenuItemVariantDefault
+					if m.state.User.LoginName == profile.Name {
+						variant = ui.SubmenuItemVariantAccent
+					}
+					// Append the profile item
+					profilesItems = append(profilesItems, &ui.LabeledSubmenuItem{
+						Label:           string(profile.ID),
+						AdditionalLabel: profile.Name,
+						Variant:         variant,
+						OnActivate: func() tea.Msg {
+							if err := libts.SwitchProfile(ctx, profile.ID); err != nil {
+								return errorMsg(err)
+							}
+
+							return successMsg(fmt.Sprintf("Switched to profile: %s", profile.Name))
+						},
+					})
+				}
 			}
 
 			submenuItems := []ui.SubmenuItem{
@@ -327,8 +359,13 @@ func (m *model) updateMenus() {
 				),
 
 				&ui.SpacerSubmenuItem{},
-				&ui.TitleSubmenuItem{Label: accountTitle},
+				&ui.TitleSubmenuItem{Label: accountsTitle},
+			}
 
+			// Append all profile items dynamically
+			submenuItems = append(submenuItems, profilesItems...)
+
+			submenuItems = append(submenuItems,
 				&ui.LabeledSubmenuItem{
 					Label: reauthenticateButtonLabel,
 					// Reauthenticating is basically the same as the first-time login flow.
@@ -346,7 +383,7 @@ func (m *model) updateMenus() {
 						return successMsg("Logged out.")
 					},
 				},
-			}
+			)
 
 			// On Linux, show the advanced Linux settings.
 			if runtime.GOOS == "linux" {

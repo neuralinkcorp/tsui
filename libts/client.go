@@ -119,3 +119,17 @@ func SetExitNode(ctx context.Context, peer *ipnstate.PeerStatus) error {
 
 	return nil
 }
+
+// List all profiles on this Tailscale client.
+func ListProfiles(ctx context.Context) ([]ipn.LoginProfile, error) {
+	_, all, err := ts.ProfileStatus(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return all, nil
+}
+
+// Switch to the given Tailscale profile.
+func SwitchProfile(ctx context.Context, profileID ipn.ProfileID) error {
+	return ts.SwitchProfile(ctx, profileID)
+}
