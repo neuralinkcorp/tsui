@@ -154,7 +154,29 @@ func renderMiddleBanner(m *model, height int, text string) string {
 func renderStatusBar(m *model) string {
 	var text string
 
-	if m.statusText == "" && m.canWrite && m.state.BackendState == ipn.Running {
+	// If in filter mode, show the search input
+	if m.exitNodeFilterMode {
+		text = lipgloss.NewStyle().
+			Foreground(ui.Blue).
+			Bold(true).
+			Render("Filter: ")
+		text += lipgloss.NewStyle().
+			Foreground(ui.White).
+			Render(m.exitNodeFilter)
+		// Add a cursor indicator
+		text += lipgloss.NewStyle().
+			Foreground(ui.Secondary).
+			Render("█")
+		if m.exitNodeFilter == "" {
+			text += lipgloss.NewStyle().
+				Faint(true).
+				Render(" (type to search, esc to cancel)")
+		} else {
+			text += lipgloss.NewStyle().
+				Faint(true).
+				Render(" (esc to cancel)")
+		}
+	} else if m.statusText == "" && m.canWrite && m.state.BackendState == ipn.Running {
 		// If there's no other status, we're running, and we have write access, show up/down.
 		text = lipgloss.NewStyle().
 			Faint(true).

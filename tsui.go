@@ -83,6 +83,11 @@ type model struct {
 	// Frame counter for the loading animation. This is always running in the background,
 	// even if the animation is not visible.
 	animationT int
+
+	// Filter text for exit nodes menu.
+	exitNodeFilter string
+	// Whether the exit nodes menu is in filter mode.
+	exitNodeFilterMode bool
 }
 
 // Initialize the application state.

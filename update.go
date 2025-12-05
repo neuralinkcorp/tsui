@@ -121,58 +121,130 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "esc":
-			if m.menu.IsSubmenuOpen() {
+			// If in filter mode, exit filter mode
+			if m.exitNodeFilterMode {
+				m.exitNodeFilterMode = false
+				m.exitNodeFilter = ""
+				m.updateMenus()
+			} else if m.menu.IsSubmenuOpen() {
 				m.menu.CloseSubmenu()
 			} else {
 				return m, tea.Quit
 			}
 
-		case "left", "h", "a":
-			m.menu.CloseSubmenu()
-		case "up", "k", "w":
+		case "left", "h":
+			if !m.exitNodeFilterMode {
+				m.menu.CloseSubmenu()
+			}
+		case "a":
+			if m.exitNodeFilterMode {
+				m.exitNodeFilter += "a"
+				m.updateMenus()
+			} else {
+				m.menu.CloseSubmenu()
+			}
+		case "up":
 			m.menu.CursorUp()
-		case "down", "j", "s":
+		case "down":
 			m.menu.CursorDown()
+		case "k", "w":
+			if !m.exitNodeFilterMode {
+				m.menu.CursorUp()
+			} else {
+				m.exitNodeFilter += msg.String()
+				m.updateMenus()
+			}
+		case "j", "s":
+			if !m.exitNodeFilterMode {
+				m.menu.CursorDown()
+			} else {
+				m.exitNodeFilter += msg.String()
+				m.updateMenus()
+			}
 		case "right", "l", "d":
-			if !m.menu.IsSubmenuOpen() {
-				return m, m.menu.Activate()
+			if m.exitNodeFilterMode && (msg.String() == "l" || msg.String() == "d") {
+				m.exitNodeFilter += msg.String()
+				m.updateMenus()
+			} else if !m.exitNodeFilterMode && !m.menu.IsSubmenuOpen() {
+				// Show a tip when entering the exit nodes menu
+				cmd := m.menu.Activate()
+				if m.menu.GetSelectedItem() == m.exitNodes && len(m.state.ExitNodes) > 0 {
+					m.statusType = statusTypeTip
+					m.statusText = "Press / to search exit nodes"
+					m.statusGen++
+					return m, tea.Batch(
+						cmd,
+						tea.Tick(tipLifetime, func(_ time.Time) tea.Msg {
+							return statusExpiredMsg(m.statusGen)
+						}),
+					)
+				}
+				return m, cmd
 			}
 
 		case "enter", " ":
 			return m, m.menu.Activate()
 
+		case "backspace":
+			if m.exitNodeFilterMode && len(m.exitNodeFilter) > 0 {
+				m.exitNodeFilter = m.exitNodeFilter[:len(m.exitNodeFilter)-1]
+				m.updateMenus()
+			}
+
+		case "/":
+			// Enable filter mode when viewing exit nodes submenu
+			if m.menu.IsSubmenuOpen() && m.menu.GetSelectedItem() == m.exitNodes && !m.exitNodeFilterMode {
+				m.exitNodeFilterMode = true
+			}
+
 		// Global action hotkey.
 		case ".":
-			switch m.state.BackendState {
-			// If running, stop Tailscale.
-			case ipn.Running:
-				return m, func() tea.Msg {
-					err := libts.Down(ctx)
-					if err != nil {
-						return errorMsg(err)
+			if m.exitNodeFilterMode {
+				// Allow typing period in filter mode
+				m.exitNodeFilter += "."
+				m.updateMenus()
+			} else {
+				switch m.state.BackendState {
+				// If running, stop Tailscale.
+				case ipn.Running:
+					return m, func() tea.Msg {
+						err := libts.Down(ctx)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return updateState()
 					}
-					return updateState()
-				}
 
-			// If stopped, start Tailscale.
-			case ipn.Stopped:
-				return m, func() tea.Msg {
-					err := libts.Up(ctx)
-					if err != nil {
-						return errorMsg(err)
+				// If stopped, start Tailscale.
+				case ipn.Stopped:
+					return m, func() tea.Msg {
+						err := libts.Up(ctx)
+						if err != nil {
+							return errorMsg(err)
+						}
+						return updateState()
 					}
-					return updateState()
-				}
 
-			// If we need to login...
-			case ipn.NeedsLogin:
-				return m, startLoginInteractive
-
-			case ipn.Starting:
-				// If we have an AuthURL in the Starting state, that means the user is reauthenticating
-				// and we want to open the browser for them (if supported).
-				if m.state.AuthURL != "" && libts.StartLoginInteractiveWillOpenBrowser() {
+				// If we need to login...
+				case ipn.NeedsLogin:
 					return m, startLoginInteractive
+
+				case ipn.Starting:
+					// If we have an AuthURL in the Starting state, that means the user is reauthenticating
+					// and we want to open the browser for them (if supported).
+					if m.state.AuthURL != "" && libts.StartLoginInteractiveWillOpenBrowser() {
+						return m, startLoginInteractive
+					}
+				}
+			}
+
+		default:
+			// Handle typing in filter mode
+			if m.exitNodeFilterMode {
+				// Only allow printable characters
+				if len(msg.String()) == 1 {
+					m.exitNodeFilter += msg.String()
+					m.updateMenus()
 				}
 			}
 		}

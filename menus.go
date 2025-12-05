@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -165,7 +166,20 @@ func (m *model) updateMenus() {
 
 		// Update the exit node submenu.
 		{
-			exitNodeItems := make([]ui.SubmenuItem, 2+len(m.state.ExitNodes))
+			// Filter exit nodes based on search text
+			filteredExitNodes := m.state.ExitNodes
+			if m.exitNodeFilter != "" {
+				filteredExitNodes = make([]*ipnstate.PeerStatus, 0)
+				filterLower := strings.ToLower(m.exitNodeFilter)
+				for _, exitNode := range m.state.ExitNodes {
+					nodeName := strings.ToLower(libts.PeerName(exitNode))
+					if strings.Contains(nodeName, filterLower) {
+						filteredExitNodes = append(filteredExitNodes, exitNode)
+					}
+				}
+			}
+
+			exitNodeItems := make([]ui.SubmenuItem, 2+len(filteredExitNodes))
 			exitNodeItems[0] = &ui.ToggleableSubmenuItem{
 				LabeledSubmenuItem: ui.LabeledSubmenuItem{
 					Label: "None",
@@ -180,7 +194,7 @@ func (m *model) updateMenus() {
 				IsActive: m.state.CurrentExitNode == nil,
 			}
 			exitNodeItems[1] = &ui.DividerSubmenuItem{}
-			for i, exitNode := range m.state.ExitNodes {
+			for i, exitNode := range filteredExitNodes {
 				// Offset for the "None" item and the divider.
 				i += 2
 

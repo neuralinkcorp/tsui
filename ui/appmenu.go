@@ -150,3 +150,11 @@ func (appmenu *Appmenu) CloseSubmenu() {
 	appmenu.isOpen = false
 	appmenu.items[appmenu.cursor].Submenu.ResetCursor()
 }
+
+// Get the currently selected item.
+func (appmenu *Appmenu) GetSelectedItem() *AppmenuItem {
+	if len(appmenu.items) == 0 {
+		return nil
+	}
+	return appmenu.items[appmenu.cursor]
+}
