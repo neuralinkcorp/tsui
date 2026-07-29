@@ -7,6 +7,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const appmenuItemWidth = 38
+
 // An item in the main menu, containing a submenu.
 type AppmenuItem struct {
 	// The text to be displayed for this menu item.
@@ -41,7 +43,7 @@ func (i *AppmenuItem) render(isSelected bool, isAnySubmenuOpen bool) string {
 		style.
 			Faint(true).
 			Render(i.AdditionalLabel),
-		35,
+		appmenuItemWidth-3,
 		style,
 	)
 	arrow := style.
@@ -62,8 +64,11 @@ type Appmenu struct {
 }
 
 // Render the menu to a string.
-func (appmenu *Appmenu) Render(height int) string {
+func (appmenu *Appmenu) Render(height int, width int) string {
 	if len(appmenu.items) == 0 {
+		return ""
+	}
+	if width <= 0 {
 		return ""
 	}
 
@@ -76,10 +81,17 @@ func (appmenu *Appmenu) Render(height int) string {
 		s.WriteString(item.render(i == appmenu.cursor, appmenu.isOpen))
 	}
 
+	submenu := &appmenu.items[appmenu.cursor].Submenu
+	if appmenu.isOpen && submenu.HasOpenChildSubmenu() && width < appmenuItemWidth+minSubmenuItemWidth*2 {
+		return submenu.Render(appmenu.isOpen, height, width)
+	}
+
+	submenuWidth := max(0, width-appmenuItemWidth)
+
 	// Render the submenu to the right of the appmenu.
 	return lipgloss.JoinHorizontal(lipgloss.Top,
 		s.String(),
-		appmenu.items[appmenu.cursor].Submenu.Render(appmenu.isOpen, height))
+		submenu.Render(appmenu.isOpen, height, submenuWidth))
 }
 
 // Move the cursor to the next selectable item in the currently active menu.
@@ -138,6 +150,24 @@ func (appmenu *Appmenu) Activate() tea.Cmd {
 		appmenu.isOpen = true
 	}
 	return nil
+}
+
+// Open the child submenu for the selected submenu item, if one exists.
+func (appmenu *Appmenu) OpenChildSubmenu() bool {
+	if !appmenu.isOpen || len(appmenu.items) == 0 {
+		return false
+	}
+
+	return appmenu.items[appmenu.cursor].Submenu.OpenChildSubmenu()
+}
+
+// Close the child submenu for the selected submenu item, if one is open.
+func (appmenu *Appmenu) CloseChildSubmenu() bool {
+	if !appmenu.isOpen || len(appmenu.items) == 0 {
+		return false
+	}
+
+	return appmenu.items[appmenu.cursor].Submenu.CloseChildSubmenu()
 }
 
 // Returns true if a submenu is currently open.

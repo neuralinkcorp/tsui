@@ -121,14 +121,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "esc":
-			if m.menu.IsSubmenuOpen() {
+			if m.menu.CloseChildSubmenu() {
+				return m, nil
+			} else if m.menu.IsSubmenuOpen() {
 				m.menu.CloseSubmenu()
 			} else {
 				return m, tea.Quit
 			}
 
 		case "left", "h", "a":
-			m.menu.CloseSubmenu()
+			if !m.menu.CloseChildSubmenu() {
+				m.menu.CloseSubmenu()
+			}
 		case "up", "k", "w":
 			m.menu.CursorUp()
 		case "down", "j", "s":
@@ -137,6 +141,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !m.menu.IsSubmenuOpen() {
 				return m, m.menu.Activate()
 			}
+			m.menu.OpenChildSubmenu()
 
 		case "enter", " ":
 			return m, m.menu.Activate()

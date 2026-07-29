@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -41,6 +42,7 @@ func buildNetworkDevicesSubmenuSection(title string, peers []*ipnstate.PeerStatu
 			items = append(items, &ui.LabeledSubmenuItem{
 				Label:           peerName,
 				AdditionalLabel: osName,
+				ChildSubmenu:    buildMachineDetailsSubmenu(peer),
 				OnActivate: func() tea.Msg {
 					err := clipboard.WriteString(peer.TailscaleIPs[0].String())
 					if err != nil {
@@ -56,6 +58,108 @@ func buildNetworkDevicesSubmenuSection(title string, peers []*ipnstate.PeerStatu
 	return items
 }
 
+func buildMachineDetailsSubmenu(peer *ipnstate.PeerStatus) *ui.Submenu {
+	peerName := libts.PeerName(peer)
+	items := []ui.SubmenuItem{
+		&ui.TitleSubmenuItem{Label: "Machine Details"},
+	}
+
+	addCopyItem := func(label string, value string) {
+		if value == "" {
+			return
+		}
+
+		items = append(items, &ui.LabeledSubmenuItem{
+			Label:           label,
+			AdditionalLabel: value,
+			OnActivate: func() tea.Msg {
+				err := clipboard.WriteString(value)
+				if err != nil {
+					return errorMsg(err)
+				}
+				return successMsg(fmt.Sprintf("Copied %s of %s.", strings.ToLower(label), peerName))
+			},
+		})
+	}
+
+	addInfoItem := func(label string, value string) {
+		if value == "" {
+			return
+		}
+
+		items = append(items, &ui.LabeledSubmenuItem{
+			Label:           label,
+			AdditionalLabel: value,
+			IsDim:           true,
+			OnActivate: func() tea.Msg {
+				err := clipboard.WriteString(value)
+				if err != nil {
+					return errorMsg(err)
+				}
+				return successMsg(fmt.Sprintf("Copied %s of %s.", strings.ToLower(label), peerName))
+			},
+		})
+	}
+
+	fullDomain := trimTrailingDot(peer.DNSName)
+	addCopyItem("Short Domain", peerName)
+	addCopyItem("Full Domain", fullDomain)
+
+	for _, addr := range peer.TailscaleIPs {
+		label := "Tailscale IPv6"
+		if addr.Is4() {
+			label = "Tailscale IPv4"
+		}
+		addCopyItem(label, addr.String())
+	}
+
+	items = append(items, &ui.SpacerSubmenuItem{}, &ui.TitleSubmenuItem{Label: "Details"})
+	addInfoItem("OS Hostname", peer.HostName)
+	addInfoItem("OS", peer.OS)
+	addCopyItem("ID", string(peer.ID))
+	addCopyItem("Node Key", peer.PublicKey.String())
+
+	status := "Offline"
+	if peer.Online {
+		status = "Connected"
+	} else if !peer.LastSeen.IsZero() {
+		status = fmt.Sprintf("Last seen %s ago", ui.FormatDuration(time.Since(peer.LastSeen)))
+	}
+	addInfoItem("Status", status)
+
+	if !peer.Created.IsZero() {
+		addInfoItem("Created", peer.Created.Format(time.RFC822))
+	}
+	if peer.KeyExpiry != nil {
+		addInfoItem("Key Expiry", ui.FormatDuration(time.Until(*peer.KeyExpiry)))
+	}
+	if peer.ExitNodeOption {
+		addInfoItem("Exit Node", "Yes")
+	}
+	if peer.Relay != "" {
+		addInfoItem("Relay", peer.Relay)
+	}
+
+	if len(peer.Addrs) > 0 || peer.CurAddr != "" {
+		items = append(items, &ui.SpacerSubmenuItem{}, &ui.TitleSubmenuItem{Label: "Endpoints"})
+		addInfoItem("Current", peer.CurAddr)
+		for _, addr := range peer.Addrs {
+			addInfoItem("Endpoint", addr)
+		}
+	}
+
+	submenu := &ui.Submenu{}
+	submenu.SetItems(items)
+	return submenu
+}
+
+func trimTrailingDot(s string) string {
+	if len(s) > 0 && s[len(s)-1] == '.' {
+		return s[:len(s)-1]
+	}
+	return s
+}
+
 // Update all of the menu UIs from the current state.
 func (m *model) updateMenus() {
 	if m.state.BackendState == ipn.Running {
@@ -64,9 +168,9 @@ func (m *model) updateMenus() {
 			submenuItems := []ui.SubmenuItem{
 				&ui.TitleSubmenuItem{Label: "Name"},
 				&ui.LabeledSubmenuItem{
-					Label: m.state.Self.DNSName[:len(m.state.Self.DNSName)-1], // Remove the trailing dot.
+					Label: trimTrailingDot(m.state.Self.DNSName),
 					OnActivate: func() tea.Msg {
-						err := clipboard.WriteString(m.state.Self.DNSName[:len(m.state.Self.DNSName)-1])
+						err := clipboard.WriteString(trimTrailingDot(m.state.Self.DNSName))
 						if err != nil {
 							return errorMsg(err)
 						}

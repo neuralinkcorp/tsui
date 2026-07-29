@@ -49,9 +49,24 @@ func FormatBytes(bytes int64) string {
 // Takes a style which is used for formatting the left-side padding, in case
 // a uniform background is required.
 func RenderSplit(left string, right string, width int, style lipgloss.Style) string {
+	if width <= 0 {
+		return ""
+	}
+
+	if lipgloss.Width(right) >= width {
+		return style.Width(width).Render(truncateString(right, width))
+	}
+
 	left = style.
 		Width(width - lipgloss.Width(right)).
-		Render(left)
+		Render(truncateString(left, width-lipgloss.Width(right)))
 
 	return left + right
+}
+
+func truncateString(s string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	return lipgloss.NewStyle().MaxWidth(width).Render(s)
 }
