@@ -17,7 +17,7 @@
 
       dependenciesFor = pkgs : with pkgs; []
         ++ (lib.optionals stdenv.isLinux [
-          # For Linux clipboard support.
+          # For X11 clipboard fallback.
           xorg.libX11.dev
         ])
         ++ (lib.optionals stdenv.isDarwin [
@@ -66,9 +66,16 @@
 
             buildInputs = dependenciesFor pkgs;
 
-            # Un-Nix the build so it can dlopen() X11 outside of Nix environments.
-            preFixup = if pkgs.stdenv.isLinux then ''
+            nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [
+              pkgs.makeWrapper
+            ];
+
+            postFixup = if pkgs.stdenv.isLinux then ''
+              # Un-Nix the build so it can dlopen() X11 outside of Nix environments.
               patchelf --remove-rpath --set-interpreter ${linuxInterpreter} $out/bin/${pname}
+
+              wrapProgram $out/bin/${pname} \
+                --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.wl-clipboard ]}
             '' else null;
           };
         });

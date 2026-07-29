@@ -15,9 +15,14 @@ int writeString(
 import "C"
 
 import (
+	"bytes"
+	"context"
+	"os"
+	"os/exec"
 	"runtime"
 	"runtime/cgo"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -27,6 +32,41 @@ func WriteString(str string) error {
 	lock.Lock()
 	defer lock.Unlock()
 
+	return writeLinuxString(str, os.Getenv("WAYLAND_DISPLAY"), exec.LookPath, writeWaylandString, writeX11String)
+}
+
+func writeLinuxString(
+	str string,
+	waylandDisplay string,
+	lookPath func(string) (string, error),
+	writeWayland func(string) error,
+	writeX11 func(string) error,
+) error {
+	if waylandDisplay != "" {
+		if _, err := lookPath("wl-copy"); err == nil {
+			if err := writeWayland(str); err == nil {
+				return nil
+			}
+		}
+	}
+
+	return writeX11(str)
+}
+
+func writeWaylandString(str string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "wl-copy")
+	cmd.Stdin = bytes.NewBufferString(str)
+	if err := cmd.Run(); err != nil {
+		return errUnavailable
+	}
+
+	return nil
+}
+
+func writeX11String(str string) error {
 	buf := []byte(str)
 
 	status := make(chan int)
